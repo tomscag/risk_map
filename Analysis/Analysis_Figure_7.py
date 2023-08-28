@@ -2,7 +2,8 @@
 
 import numpy as np
 import networkx as nx
-from Functions import simulate_reaction_diffusion_gillespie 
+from Functions import simulate_reaction_diffusion_gillespie
+from Functions import simulate_reaction_diffusion_gillespie_fraction
 
 import multiprocessing as mp
 
@@ -24,11 +25,11 @@ def load_topology(fname,NUM_NODES):
     if fname=="full":
         return nx.complete_graph(NUM_NODES)
     elif fname=="america":
-        _fpath   = "./Data/Processed/Topologies/Powergrid_NorthAmerica/powergrid_north_america.el"
+        _fpath   = "../Data/Processed/Topologies/Powergrid_NorthAmerica/powergrid_north_america.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)    
         return sample_graph_configuration_model(edgelist,NUM_NODES)
     elif fname=="europe":
-        _fpath   = "./Data/Processed/Topologies/Powergrid_Europe/powergrid_europe.el"
+        _fpath   = "../Data/Processed/Topologies/Powergrid_Europe/powergrid_europe.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)    
         return sample_graph_configuration_model(edgelist,NUM_NODES)
     else:
@@ -67,11 +68,11 @@ def analyze(r0,r1_list,filepath_output):
     """
     FNAME_OUTPUT = filepath_output + f"powergrid_r0_{r0:.5f}.dat"
     with open(FNAME_OUTPUT,"w+") as file:
-        file.write(f"topology: {name_topology}\nnumber of nodes: {NUM_NODES}\nnumber of samples: {NUM_SAMPLES}\nmax time step: {MAX_TSTEP}\n")
+        file.write(f"topology: {name_topology}\nnumber of nodes: {NUM_NODES}\nnumber of samples: {NUM_SAMPLES}\nmax time step: {MAX_TSTEP}\ninitial fraction disrupted nodes: {dynp_pINI}\n")
 
     for r1 in r1_list:
         print(f"analyzing R0: {r0:2.3f}, R1: {r1:2.3f}")
-        O = simulate_reaction_diffusion_gillespie.main([G,r0,r1,MAX_TSTEP,NUM_SAMPLES])
+        O = simulate_reaction_diffusion_gillespie_fraction.main([G,r0,r1,MAX_TSTEP,NUM_SAMPLES,dynp_pINI])
         with open(FNAME_OUTPUT,"a+") as file:
             # file.write(str(r1) + "\t" + str(O) + "\n")
             file.write(f"{r1:.6f}"+"\t"+f"{O:.6f}"+"\n")    
@@ -81,17 +82,18 @@ def analyze(r0,r1_list,filepath_output):
 #########################################################
 #########################################################
 
-name_topology   = "full" # america europe full
-filepath_output = "./Analysis/Output_OAD/"
+name_topology   = "america" # america europe full
+filepath_output = "./Output_OAD/"
 
-NUM_NODES    = 100   # 500
-NUM_SAMPLES  = 10    # 25
-MAX_TSTEP    = 30    # 30
+NUM_NODES    = 1000   # 500
+NUM_SAMPLES  = 50     # 25
+MAX_TSTEP    = 1000   # 30
+dynp_pINI    = 0.01   # Fraction of disrupted nodes on the network as initial condition
 
 G = load_topology(name_topology,NUM_NODES)
 
-r0_list = np.linspace(0,8,10)
-r1_list = np.linspace(0,20,10)
+r0_list = np.linspace(0,10,101)
+r1_list = np.linspace(0,1.1*(1/dynp_pINI),101)
 
 
 
@@ -102,8 +104,8 @@ def apply_async_with_callback():
     """ Parallelize the execution of the function analyze """
     pool = mp.Pool(8)
     for i in range(len(r0_list)):
-        pool.apply_async(analyze, args = (r0_list[i], r1_list, filepath_output, ))
-        # analyze(r0_list[i], r1_list, filepath_output)
+        # pool.apply_async(analyze, args = (r0_list[i], r1_list, filepath_output, ))
+        analyze(r0_list[i], r1_list, filepath_output)
     pool.close()
     pool.join()
 
