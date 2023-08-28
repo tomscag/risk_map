@@ -11,9 +11,29 @@ import time
 import cProfile
 import pstats
 
-def load_topology(fname):
-    """ Load the edgelist """
-    return nx.read_edgelist(fname,nodetype=int)
+def load_topology(fname,NUM_NODES):
+    '''
+        if fname=="full"
+            Return a fully connected graph
+
+            num_noded: int
+                number of nodes
+        else
+            Return a sampled graph from an existing topology
+    '''
+    if fname=="full":
+        return nx.complete_graph(NUM_NODES)
+    elif fname=="america":
+        _fpath   = "./Data/Processed/Topologies/Powergrid_NorthAmerica/powergrid_north_america.el"
+        edgelist = nx.read_edgelist(_fpath,nodetype=int)    
+        return sample_graph_configuration_model(edgelist,NUM_NODES)
+    elif fname=="europe":
+        _fpath   = "./Data/Processed/Topologies/Powergrid_Europe/powergrid_europe.el"
+        edgelist = nx.read_edgelist(_fpath,nodetype=int)    
+        return sample_graph_configuration_model(edgelist,NUM_NODES)
+    else:
+        print("Topology not recognized \n EXIT")
+        return
 
 
 def sample_graph_configuration_model(P,num_nodes):
@@ -41,23 +61,13 @@ def sample_graph_configuration_model(P,num_nodes):
     return G
 
 
-def fully_connected_graph(num_nodes):
-    '''
-        Return a fully connected graph
-
-            num_noded: int
-                number of nodes
-    '''
-    return nx.complete_graph(num_nodes)
-
-
 def analyze(r0,r1_list,filepath_output):
     """ Simulate the reaction diffusion over the graph G 
         and save the results in a text file
     """
     FNAME_OUTPUT = filepath_output + f"powergrid_r0_{r0:.5f}.dat"
     with open(FNAME_OUTPUT,"w+") as file:
-        file.write(f"number of nodes: {NUM_NODES}\nnumber of samples: {NUM_SAMPLES}\nmax time step: {MAX_TSTEP}\n")
+        file.write(f"topology: {name_topology}\nnumber of nodes: {NUM_NODES}\nnumber of samples: {NUM_SAMPLES}\nmax time step: {MAX_TSTEP}\n")
 
     for r1 in r1_list:
         print(f"analyzing R0: {r0:2.3f}, R1: {r1:2.3f}")
@@ -71,19 +81,17 @@ def analyze(r0,r1_list,filepath_output):
 #########################################################
 #########################################################
 
-filepath_input  = "./Data/Processed/Topologies/Powergrid_Europe/powergrid_europe.el"
+name_topology   = "full" # america europe full
 filepath_output = "./Analysis/Output_OAD/"
 
-NUM_NODES    = 51   # 500
+NUM_NODES    = 100   # 500
 NUM_SAMPLES  = 10    # 25
-MAX_TSTEP    = 10    # 30
+MAX_TSTEP    = 30    # 30
 
-P = load_topology(filepath_input)
-# G = sample_graph_configuration_model(P,NUM_NODES)
-G = fully_connected_graph(NUM_NODES)
+G = load_topology(name_topology,NUM_NODES)
 
-r0_list = np.linspace(0,5,10)
-r1_list = np.linspace(0,1,10)
+r0_list = np.linspace(0,8,10)
+r1_list = np.linspace(0,20,10)
 
 
 
@@ -92,12 +100,12 @@ r1_list = np.linspace(0,1,10)
 
 def apply_async_with_callback():
     """ Parallelize the execution of the function analyze """
-    # pool = mp.Pool(1)
+    pool = mp.Pool(8)
     for i in range(len(r0_list)):
-        # pool.apply_async(analyze, args = (r0_list[i], r1_list, filepath_output, ))
-        analyze(r0_list[i], r1_list, filepath_output)
-    # pool.close()
-    # pool.join()
+        pool.apply_async(analyze, args = (r0_list[i], r1_list, filepath_output, ))
+        # analyze(r0_list[i], r1_list, filepath_output)
+    pool.close()
+    pool.join()
 
 if __name__ == '__main__':
     apply_async_with_callback()
