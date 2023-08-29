@@ -11,9 +11,25 @@ import h3
 import h3pandas
 
 import os
+import glob
 import time
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+
+
+
+# Set fonts 
+sizetext = 20
+plt.rcParams['xtick.major.pad'] = '10'
+plt.rc('text', usetex=True)
+# plt.rc('font', **{'family': 'serif', 'serif': ['Computer Modern'], 'size': sizetext})
+
+csfont = {'fontname':'Comic Sans MS'}
+hfont = {'fontname':'Helvetica'}
+plt.rcParams['text.usetex'] = False
+
+
+
 
 #############################################
 #############################################
@@ -21,7 +37,11 @@ from selenium.webdriver.firefox.options import Options
 
 class Plotter():
     def __init__(self) -> None:
-        pass
+        self.figdict = {}   # For saving
+
+
+
+
 
     @staticmethod
     def fragility_model_storm(dist,force,const=1.092e-3,dist0=10):
@@ -44,7 +64,7 @@ class Plotter():
         if type.lower() == "motter":
             print("Computing intrinsic risk with Motter model")
             toler_index      = "1"   # "0.0"  Tolerance index
-            fname_risk     = "./Analysis/Output_Motter/Intrinsic_Risk_LngLat.dat" 
+            fname_risk     = "./Output_Motter/Intrinsic_Risk_LngLat.dat" 
 
             risk_intrinsic_nodes = pd.read_csv(fname_risk, sep=" ", header=0, index_col=0)
             risk_intrinsic_nodes = risk_intrinsic_nodes[["lng","lat",toler_index]]
@@ -52,10 +72,10 @@ class Plotter():
 
         elif type.lower() == "oad":
 
-            respath = "./Analysis/Output_OAD/lb_10_mu_1_al_0.3"
+            respath = "./Output_OAD/lb_10_mu_1_al_0.3"
 
             print(f"Loading OAD results in {respath}")
-            fname_risk     = "./Analysis/Output_Motter/Intrinsic_Risk_LngLat.dat" 
+            fname_risk     = "./Output_Motter/Intrinsic_Risk_LngLat.dat" 
             risk_intrinsic_nodes = pd.read_csv(fname_risk, sep=" ", header=0, index_col=0)
             risk_intrinsic_nodes = risk_intrinsic_nodes[["lng","lat"]]
 
@@ -84,7 +104,7 @@ class Plotter():
     @staticmethod
     def load_data_storm(name_storm):
 
-        _dir  = './Data/Processed/Storms/storm_'
+        _dir  = '../Data/Processed/Storms/storm_'
 
         data_storm = pd.read_csv(
                     _dir+name_storm+'.csv', delimiter=' ',
@@ -193,10 +213,11 @@ class Plotter():
 
     def plot_us_riskmap(self,evname= "EARL"):
 
+        fig, axes = plt.subplots(figsize=(3,3))
         risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes()
         
         # Figure parameters
-        eventpath      = "./Analysis/prob_failure_storms/"
+        eventpath      = "./prob_failure_storms/"
         width, height  = (2000,1500)   # Pixels
         bounds         = ([16.4, -95.00],[55.5, -87.00])   # (south_west, north_east)        
         resol          = 3
@@ -226,6 +247,98 @@ class Plotter():
         map = Plotter.add_storm_to_map(map,data_storm)
         Plotter.export_map(map,bounds, width, height,evname,"./",delay=2.0)
 
+        # Save
+        self.figdict[f'risk_map_{evname}'] = fig 
+
+
+    ##################################
+    ### Parametric plot 
+
+    @staticmethod
+    def fname_var_R0(r0,NUM_NODES,NUM_SAMPLES,MAX_TSTEP):
+
+        FILEPATH    = f"/home/tomsc/Projects/RiskMap/Analysis/Output_OAD/Simulation/pgrid_nodes_{NUM_NODES}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}/"
+        return FILEPATH + f"powergrid_r0_{r0:.5f}.dat"
+
+
+
+    def plot_heatmap2d(self,NUM_NODES=500,NUM_SAMPLES=10,MAX_TSTEP=50):
+        
+        fig, ax = plt.subplots(figsize=(3,3))
+        size_ticksnumber = 18 #plt.tick_params(labelsize=size_ticksnumber)
+        size_axeslabel = 22 #plt.xlabel("$m$",{'fontsize': size_axeslabel})
+        size_legend = 22 #plt.legend(fancybox=True, shadow=True, ncol = 3, numpoints=1,loc = 'upper center', fontsize = size_legend)
+        size_text = 20 #plt.text(-0.16,1.05, r'$(A)$', horizontalalignment='left', verticalalignment='center',transform=ax.transAxes, fontsize= size_text) 
+        size_ticksnumber_inset = 20
+        size_axeslabel_inset = 20
+
+
+
+        FILEPATH    = f"/home/tomsc/Projects/RiskMap/Analysis/Output_OAD/Simulation/pgrid_nodes_{NUM_NODES}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}/"
+        FILELIST    = glob.glob(FILEPATH+"*.dat")
+
+
+        r0_list = sorted([float(item.split(".dat")[0].split("_")[-1]) for item in FILELIST])
+
+        with open(FILELIST[0],"r") as fp:
+            data    = fp.readlines()[6:]
+            r1_list = [float(item.split("\t")[0].split()[0]) for item in data] # r1_list
+
+        S = []
+        for r0 in r0_list:
+            file = Plotter.fname_var_R0(r0,NUM_NODES,NUM_SAMPLES,MAX_TSTEP)
+            with open(file,"r") as fp:
+                data = fp.readlines()[6:]
+                row = [float(item.split("\t")[1].split()[0]) for item in data] # solution
+                S.append(row[0:97])
+                # S.append(row)
+
+
+
+        arr = np.transpose(np.array(S, dtype=float))
+
+
+
+
+
+        plt.tick_params(labelsize=1*size_ticksnumber) #if written below cax, it doesnt work
+        plt.plot([1.0,0.01],[0.0,float(1/0.01)], color='#dd181f', linewidth=1.5)
+        # index = np.where(t_crit(np.array(r0_list),r)==np.nanmax(t_crit(np.array(r0_list),r)))[0][0]
+        # x_m = r0_list[index]
+        # t_m = np.nanmax(t_crit(np.array(r0_list),r))
+        # plt.plot([x_m, x_m], [1.0*t_m, max(r1_list)], color='#dd181f', linewidth=3)
+        # plt.plot(r0_list, t_crit(np.array(r0_list),r), color='#dd181f', linewidth=3)
+    #    plt.imshow(arr, extent=[-1,1,-1,1],origin='lower', cmap='viridis')
+
+        interpolation = "none" # none bilinear bicubic hanning
+        im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
+                    origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
+        # im = plt.imshow(arr)
+        cbar = plt.colorbar(im, cax = fig.add_axes([0.91, 0.12, 0.03, 0.66]), shrink=0.99, pad = 0.07)
+        cbar.ax.set_ylabel(r'$S$', rotation=0, fontsize = 25, labelpad=15)
+        cbar.ax.set_title(r'$S$', {'fontsize': size_axeslabel})
+        cbar.ax.tick_params(labelsize=0.8*size_axeslabel)
+        
+        ax.set_xlabel(r"$\mathcal{R}_0$", {'fontsize': size_axeslabel})
+        # ax.set_xlabel(r"$\mathcal{R}_0$", **hfont)
+        ax.set_ylabel(r"$\mathcal{R}_1$", {'fontsize': size_axeslabel})
+        # ax.set_ylim((0,5))
+        
+        # xticks = [1, 2.5, 4]
+        # plt.xticks(xticks)
+        
+        # plt.text(0.025,0.06, r'{\fontfamily{ptm}\selectfont Non-percolating}', color='white', horizontalalignment='left',verticalalignment='center',fontsize=size_text,transform=ax.transAxes)
+        # plt.text(0.95,0.9, r'{\fontfamily{ptm}\selectfont Percolating}', color='black', horizontalalignment='right',verticalalignment='center',fontsize=size_text,transform=ax.transAxes)
+        plt.tick_params(labelsize=size_ticksnumber)
+        
+        # plt.text(-0.25, 1, r"$(a)$", horizontalalignment='left',verticalalignment='center',transform=ax.transAxes, size=0.9*size_axeslabel)
+        
+        
+        # Save
+        self.figdict[f'heat_map'] = fig 
+
+        return
+
 
 
 
@@ -243,7 +356,25 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    # Riskmap plot
-    Pjotr.plot_us_riskmap("EARL")
+    ## Riskmap plot
+    # Pjotr.plot_us_riskmap("EARL")
 
     # [Pjotr.plot_us_riskmap(name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
+
+
+    ## Parametric plot
+    Pjotr.plot_heatmap2d(NUM_NODES=1000,NUM_SAMPLES=50,MAX_TSTEP=1000)
+
+
+    ## Show or save
+    save = True
+    if not save: #args.save:
+        plt.show()
+    else:
+        for figname, fig in Pjotr.figdict.items():
+            print("Saving {}...".format(figname))
+            fig.savefig(
+                "Figures/{}.pdf".format(figname), format='pdf', bbox_inches='tight', 
+                pad_inches=0.01, transparent=True
+            )
+
