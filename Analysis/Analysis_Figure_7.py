@@ -85,27 +85,33 @@ def analyze(r0,r1_list,filepath_output):
 name_topology   = "america" # america europe full
 filepath_output = "./Output_OAD/"
 
-NUM_NODES    = 1000   # 500
-NUM_SAMPLES  = 50     # 25
-MAX_TSTEP    = 1000   # 30
-dynp_pINI    = 0.01   # Fraction of disrupted nodes on the network as initial condition
+NUM_NODES    = 1000   # 1000
+NUM_SAMPLES  = 100     # 100
+MAX_TSTEP    = 1000   # 1000
+dynp_pINI    = 0.05   # Fraction of disrupted nodes on the network as initial condition
 
 G = load_topology(name_topology,NUM_NODES)
 
-r0_list = np.linspace(0,10,101)
-r1_list = np.linspace(0,1.1*(1/dynp_pINI),101)
+r0_list = np.linspace(0,2,50)
+r1_list = np.linspace(0,1.1*(1/dynp_pINI),50)
 
+## wip- non equal binning
+# np.logspace(0,1/(1-dynp_pINI),base=25,dtype=float)
+# # np.interp
+# r0_arr = []
 
-
-
+# r1_crit = 1
+# r0_crit = 1/(1-dynp_pINI) - r1_crit/dynp_pINI
+# A = np.linspace(0,r0_crit,25)
+# np.concatenate([A, np.logspace(np.log10(r0_crit),np.log10(2),num=25,base=10,dtype=float)])
 
 
 def apply_async_with_callback():
     """ Parallelize the execution of the function analyze """
     pool = mp.Pool(8)
     for i in range(len(r0_list)):
-        # pool.apply_async(analyze, args = (r0_list[i], r1_list, filepath_output, ))
-        analyze(r0_list[i], r1_list, filepath_output)
+        pool.apply_async(analyze, args = (r0_list[i], r1_list, filepath_output, ))
+        # analyze(r0_list[i], r1_list, filepath_output)
     pool.close()
     pool.join()
 
