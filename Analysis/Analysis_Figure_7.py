@@ -22,8 +22,8 @@ def load_topology(fname,NUM_NODES):
         else
             Return a sampled graph from an existing topology
     '''
-    if fname=="full":
-        return nx.complete_graph(NUM_NODES)
+    if fname=="random":
+        return nx.fast_gnp_random_graph(NUM_NODES, 0.2, seed=None, directed=False)
     elif fname=="america":
         _fpath   = "../Data/Processed/Topologies/Powergrid_NorthAmerica/powergrid_north_america.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)    
@@ -82,11 +82,11 @@ def analyze(r0,r1_list,filepath_output):
 #########################################################
 #########################################################
 
-name_topology   = "america" # america europe full
+name_topology   = "random" # america europe random
 filepath_output = "./Output_OAD/"
 
 NUM_NODES    = 1000   # 1000
-NUM_SAMPLES  = 100     # 100
+NUM_SAMPLES  = 80     # 100
 MAX_TSTEP    = 1000   # 1000
 dynp_pINI    = 0.05   # Fraction of disrupted nodes on the network as initial condition
 
