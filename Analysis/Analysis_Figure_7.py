@@ -23,7 +23,9 @@ def load_topology(fname,NUM_NODES):
             Return a sampled graph from an existing topology
     '''
     if fname=="random":
-        return nx.fast_gnp_random_graph(NUM_NODES, 0.2, seed=None, directed=False)
+        return nx.fast_gnp_random_graph(NUM_NODES, 0.005, seed=None, directed=False)
+    elif fname=="full":
+        return nx.complete_graph(NUM_NODES)
     elif fname=="america":
         _fpath   = "../Data/Processed/Topologies/Powergrid_NorthAmerica/powergrid_north_america.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)    
@@ -32,6 +34,9 @@ def load_topology(fname,NUM_NODES):
         _fpath   = "../Data/Processed/Topologies/Powergrid_Europe/powergrid_europe.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)    
         return sample_graph_configuration_model(edgelist,NUM_NODES)
+    elif fname=="airports":
+        _fpath = "../Data/Processed/Airports/airports_world.edgelist"
+        return nx.read_edgelist(_fpath,nodetype=int) 
     else:
         print("Topology not recognized \n EXIT")
         return
@@ -82,10 +87,10 @@ def analyze(r0,r1_list,filepath_output):
 #########################################################
 #########################################################
 
-name_topology   = "random" # america europe random
+name_topology   = "airports" # america europe airports random
 filepath_output = "./Output_OAD/"
 
-NUM_NODES    = 1000   # 1000
+NUM_NODES    = 500   # 1000
 NUM_SAMPLES  = 80     # 100
 MAX_TSTEP    = 1000   # 1000
 dynp_pINI    = 0.05   # Fraction of disrupted nodes on the network as initial condition

@@ -26,7 +26,7 @@ plt.rc('text', usetex=True)
 
 csfont = {'fontname':'Comic Sans MS'}
 hfont = {'fontname':'Helvetica'}
-plt.rcParams['text.usetex'] = False
+plt.rcParams['text.usetex'] = True   # Render text with Latex
 
 
 
@@ -287,22 +287,23 @@ class Plotter():
         S = []
         for r0 in r0_list:
             file = Plotter.fname_var_R0(r0,NUM_NODES,NUM_SAMPLES,MAX_TSTEP)
-            with open(file,"r") as fp:
-                data = fp.readlines()[6:]
+            with open(file,"r") as fp:               
+                data = fp.readlines()
+                name_topology = data[0].split()[-1]
+                dynp_pINI = float(data[4].split()[-1])
+                data = data[6:]
                 row = [float(item.split("\t")[1].split()[0]) for item in data] # solution
-                S.append(row[0:97])
-                # S.append(row)
+                # S.append(row[0:97])
+                S.append(row)
 
 
 
         arr = np.transpose(np.array(S, dtype=float))
 
 
-
-
-
         plt.tick_params(labelsize=1*size_ticksnumber) #if written below cax, it doesnt work
-        plt.plot([1.0,0.01],[0.0,float(1/0.01)], color='#dd181f', linewidth=1.5)
+        plt.plot([1.0/(1-dynp_pINI),0.0],[0.0,1/(dynp_pINI*(1-dynp_pINI))], color='#dd181f', linewidth=1.5)
+
         # index = np.where(t_crit(np.array(r0_list),r)==np.nanmax(t_crit(np.array(r0_list),r)))[0][0]
         # x_m = r0_list[index]
         # t_m = np.nanmax(t_crit(np.array(r0_list),r))
@@ -314,25 +315,26 @@ class Plotter():
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
                     origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
         # im = plt.imshow(arr)
-        cbar = plt.colorbar(im, cax = fig.add_axes([0.91, 0.12, 0.03, 0.66]), shrink=0.99, pad = 0.07)
-        cbar.ax.set_ylabel(r'$S$', rotation=0, fontsize = 25, labelpad=15)
+        cbar = plt.colorbar(im, cax = fig.add_axes([0.95, 0.12, 0.03, 0.66]), shrink=0.99, pad = 0.07)
+        # cbar.ax.set_ylabel(r'$S$', rotation=0, fontsize = 25, labelpad=15)
+        cbar.set_ticks([0,0.2,0.4,0.6,0.8])
         cbar.ax.set_title(r'$S$', {'fontsize': size_axeslabel})
-        cbar.ax.tick_params(labelsize=0.8*size_axeslabel)
+        # cbar.ax.tick_params(labelsize=0.8*size_axeslabel)
         
         ax.set_xlabel(r"$\mathcal{R}_0$", {'fontsize': size_axeslabel})
-        # ax.set_xlabel(r"$\mathcal{R}_0$", **hfont)
+        ax.set_xlabel(r"$\mathcal{R}_0$", **hfont)
         ax.set_ylabel(r"$\mathcal{R}_1$", {'fontsize': size_axeslabel})
         # ax.set_ylim((0,5))
         
         # xticks = [1, 2.5, 4]
-        # plt.xticks(xticks)
+        # plt.xticks([0.5,1.0,1.5,2.0])
         
         # plt.text(0.025,0.06, r'{\fontfamily{ptm}\selectfont Non-percolating}', color='white', horizontalalignment='left',verticalalignment='center',fontsize=size_text,transform=ax.transAxes)
         # plt.text(0.95,0.9, r'{\fontfamily{ptm}\selectfont Percolating}', color='black', horizontalalignment='right',verticalalignment='center',fontsize=size_text,transform=ax.transAxes)
         plt.tick_params(labelsize=size_ticksnumber)
         
         # plt.text(-0.25, 1, r"$(a)$", horizontalalignment='left',verticalalignment='center',transform=ax.transAxes, size=0.9*size_axeslabel)
-        
+        # plt.title(f"{name_topology} nodes: {NUM_NODES}")
         
         # Save
         self.figdict[f'heat_map'] = fig 
@@ -363,7 +365,7 @@ if __name__ == "__main__":
 
 
     ## Parametric plot
-    Pjotr.plot_heatmap2d(NUM_NODES=1000,NUM_SAMPLES=50,MAX_TSTEP=1000)
+    Pjotr.plot_heatmap2d(NUM_NODES=1000,NUM_SAMPLES=75,MAX_TSTEP=1000)
 
 
     ## Show or save
