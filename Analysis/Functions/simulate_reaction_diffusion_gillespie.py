@@ -185,6 +185,7 @@ def main(argv):
             # Compute fraction of operational nodes in the absorbing state
             # nf  = nw.subgraph(dyn_VS)
             # gcc = max([len(item) for item in nx.connected_components(nf)])/net_N
+            print(dyn_NS)
             res_sam[init_node].append(dyn_NS/net_N)  # Save result here
 
     

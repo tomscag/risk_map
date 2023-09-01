@@ -25,7 +25,7 @@ def main(argv):
 
     dynp_tmax  = argv[3]  #'Maximum time steps (it stops if the absorbing state is reached): ' es 1000000
     num_sam    = argv[4]  # number of samples es: 10
-    dynp_pINI  = argv[5] #'Fraction of infected vertices on the network as initial condition (is random for each sample): ') es: 0.5
+    dynp_pINI  = argv[5]  #'Fraction of infected vertices on the network as initial condition (is random for each sample): ') es: 0.5
 
 
 

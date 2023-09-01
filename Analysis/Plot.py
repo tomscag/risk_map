@@ -311,7 +311,7 @@ class Plotter():
         # plt.plot(r0_list, t_crit(np.array(r0_list),r), color='#dd181f', linewidth=3)
     #    plt.imshow(arr, extent=[-1,1,-1,1],origin='lower', cmap='viridis')
 
-        interpolation = "none" # none bilinear bicubic hanning
+        interpolation = "bilinear" # none bilinear bicubic hanning
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
                     origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
         # im = plt.imshow(arr)
@@ -324,7 +324,9 @@ class Plotter():
         ax.set_xlabel(r"$\mathcal{R}_0$", {'fontsize': size_axeslabel})
         ax.set_xlabel(r"$\mathcal{R}_0$", **hfont)
         ax.set_ylabel(r"$\mathcal{R}_1$", {'fontsize': size_axeslabel})
-        # ax.set_ylim((0,5))
+
+        # ax.set_xlim((0,max(r0_list)))
+        # ax.set_ylim((0,max(r1_list)))
         
         # xticks = [1, 2.5, 4]
         # plt.xticks([0.5,1.0,1.5,2.0])
@@ -365,7 +367,7 @@ if __name__ == "__main__":
 
 
     ## Parametric plot
-    Pjotr.plot_heatmap2d(NUM_NODES=1000,NUM_SAMPLES=75,MAX_TSTEP=1000)
+    Pjotr.plot_heatmap2d(NUM_NODES=1000,NUM_SAMPLES=26,MAX_TSTEP=1000)
 
 
     ## Show or save
