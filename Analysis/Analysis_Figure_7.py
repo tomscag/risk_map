@@ -6,6 +6,7 @@ from Functions import simulate_reaction_diffusion_gillespie
 from Functions import simulate_reaction_diffusion_gillespie_fraction
 
 import multiprocessing as mp
+import os
 
 # PAckages for profiling
 import time 
@@ -25,18 +26,26 @@ def load_topology(fname,NUM_NODES):
     if fname=="random":
         return nx.fast_gnp_random_graph(NUM_NODES, 0.005, seed=None, directed=False)
     elif fname=="full":
-        return nx.complete_graph(NUM_NODES)
+        return nx.complete_graph(NUM_NODES), NUM_NODES
     elif fname=="america":
         _fpath   = "../Data/Processed/Topologies/Powergrid_NorthAmerica/powergrid_north_america.el"
-        edgelist = nx.read_edgelist(_fpath,nodetype=int)    
-        return sample_graph_configuration_model(edgelist,NUM_NODES)
+        edgelist = nx.read_edgelist(_fpath,nodetype=int)
+        if NUM_NODES < 16167:    # If less than the number, sample with configuration model
+            return sample_graph_configuration_model(edgelist,NUM_NODES), NUM_NODES
+        else:
+            NUM_NODES = 16167
+            return edgelist, NUM_NODES
     elif fname=="europe":
         _fpath   = "../Data/Processed/Topologies/Powergrid_Europe/powergrid_europe.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)    
-        return sample_graph_configuration_model(edgelist,NUM_NODES)
+        if NUM_NODES < 1467: # If less than the number, sample with configuration model
+            return sample_graph_configuration_model(edgelist,NUM_NODES), NUM_NODES
+        else:
+            NUM_NODES = 1467
+            return edgelist, NUM_NODES
     elif fname=="airports":
         _fpath = "../Data/Processed/Airports/airports_world.edgelist"
-        return nx.read_edgelist(_fpath,nodetype=int) 
+        return nx.read_edgelist(_fpath,nodetype=int), NUM_NODES
     else:
         print("Topology not recognized \n EXIT")
         return
@@ -71,7 +80,7 @@ def analyze(r0,r1_list,filepath_output):
     """ Simulate the reaction diffusion over the graph G 
         and save the results in a text file
     """
-    FNAME_OUTPUT = filepath_output + f"powergrid_r0_{r0:.5f}.dat"
+    FNAME_OUTPUT = filepath_output + f"{name_topology}_r0_{r0:.5f}.dat"
     with open(FNAME_OUTPUT,"w+") as file:
         file.write(f"topology: {name_topology}\nnumber of nodes: {NUM_NODES}\nnumber of samples: {NUM_SAMPLES}\nmax time step: {MAX_TSTEP}\ninitial fraction disrupted nodes: {dynp_pINI}\n")
 
@@ -80,27 +89,41 @@ def analyze(r0,r1_list,filepath_output):
         O = simulate_reaction_diffusion_gillespie_fraction.main([G,r0,r1,MAX_TSTEP,NUM_SAMPLES,dynp_pINI])
         with open(FNAME_OUTPUT,"a+") as file:
             # file.write(str(r1) + "\t" + str(O) + "\n")
-            file.write(f"{r1:.6f}"+"\t"+f"{O:.6f}"+"\n")    
+            file.write(f"{r1:.6f}"+"\t"+f"{O:.6f}"+"\n") 
+        if O < 1e-5: # 
+            break   
 
 
 #########################################################
 #########################################################
 #########################################################
 
-name_topology   = "airports" # america europe airports random
-filepath_output = "./Output_OAD/"
+name_topology   = "europe" # america europe airports random
 
-NUM_NODES    = 500   # 1000
-NUM_SAMPLES  = 80     # 100
-MAX_TSTEP    = 1000   # 1000
+
+NUM_NODES    = 5000   # 1000
+NUM_SAMPLES  = 75     # 100
+MAX_TSTEP    = 2000   # 1000
 dynp_pINI    = 0.05   # Fraction of disrupted nodes on the network as initial condition
 
-G = load_topology(name_topology,NUM_NODES)
+G, NUM_NODES = load_topology(name_topology,NUM_NODES)
+
+filepath_output = f"./Output_OAD/{name_topology}_nodes_{NUM_NODES}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}/"
+
+if not os.path.exists(filepath_output):
+    os.makedirs(filepath_output)
+else:
+    print("Directory already present: delete it or change parameters")
+    os._exit(0)
+
+
 
 r0_list = np.linspace(0,2,50)
 r1_list = np.linspace(0,1.1*(1/dynp_pINI),50)
 
 ## wip- non equal binning
+
+
 # np.logspace(0,1/(1-dynp_pINI),base=25,dtype=float)
 # # np.interp
 # r0_arr = []
