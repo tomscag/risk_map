@@ -255,14 +255,15 @@ class Plotter():
     ### Parametric plot 
 
     @staticmethod
-    def fname_var_R0(r0,NUM_NODES,NUM_SAMPLES,MAX_TSTEP):
+    def fname_var_R0(r0,name_topology,NUM_NODES,NUM_SAMPLES,MAX_TSTEP):
 
-        FILEPATH    = f"/home/tomsc/Projects/RiskMap/Analysis/Output_OAD/Simulation/pgrid_nodes_{NUM_NODES}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}/"
-        return FILEPATH + f"powergrid_r0_{r0:.5f}.dat"
+        FILEPATH    = f"/home/tomsc/Projects/RiskMap/Analysis/Output_OAD/Simulation/{name_topology}_nodes_{NUM_NODES}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}/"
+        return FILEPATH + f"{name_topology}_r0_{r0:.5f}.dat"
+        # return FILEPATH + f"powergrid_r0_{r0:.5f}.dat"
 
 
 
-    def plot_heatmap2d(self,NUM_NODES=500,NUM_SAMPLES=10,MAX_TSTEP=50):
+    def plot_heatmap2d(self,name_topology="america",NUM_NODES=500,NUM_SAMPLES=10,MAX_TSTEP=50):
         
         fig, ax = plt.subplots(figsize=(3,3))
         size_ticksnumber = 18 #plt.tick_params(labelsize=size_ticksnumber)
@@ -274,7 +275,7 @@ class Plotter():
 
 
 
-        FILEPATH    = f"/home/tomsc/Projects/RiskMap/Analysis/Output_OAD/Simulation/pgrid_nodes_{NUM_NODES}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}/"
+        FILEPATH    = f"/home/tomsc/Projects/RiskMap/Analysis/Output_OAD/Simulation/{name_topology}_nodes_{NUM_NODES}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}/"
         FILELIST    = glob.glob(FILEPATH+"*.dat")
 
 
@@ -286,7 +287,7 @@ class Plotter():
 
         S = []
         for r0 in r0_list:
-            file = Plotter.fname_var_R0(r0,NUM_NODES,NUM_SAMPLES,MAX_TSTEP)
+            file = Plotter.fname_var_R0(r0,name_topology,NUM_NODES,NUM_SAMPLES,MAX_TSTEP)
             with open(file,"r") as fp:               
                 data = fp.readlines()
                 name_topology = data[0].split()[-1]
@@ -311,7 +312,7 @@ class Plotter():
         # plt.plot(r0_list, t_crit(np.array(r0_list),r), color='#dd181f', linewidth=3)
     #    plt.imshow(arr, extent=[-1,1,-1,1],origin='lower', cmap='viridis')
 
-        interpolation = "bilinear" # none bilinear bicubic hanning
+        interpolation = "none" # none bilinear bicubic hanning
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
                     origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
         # im = plt.imshow(arr)
@@ -366,8 +367,9 @@ if __name__ == "__main__":
     # [Pjotr.plot_us_riskmap(name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
 
 
-    ## Parametric plot
-    Pjotr.plot_heatmap2d(NUM_NODES=1000,NUM_SAMPLES=26,MAX_TSTEP=1000)
+    # Parametric plot
+    Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
+
 
 
     ## Show or save
