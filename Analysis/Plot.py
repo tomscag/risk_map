@@ -51,53 +51,37 @@ class Plotter():
         """
         return  const*((force/65)**(8.02))/(dist+dist0)**2
 
-    
+    @staticmethod
+    def load_topology_geodata(name_topology):
+        fpath = f"../Data/Processed/Topologies/{name_topology}/{name_topology}.nodelist"
+        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lat","lng"])
 
     @staticmethod  
-    def load_risk_intrinsic_nodes(type="oad"):
+    def load_risk_intrinsic_nodes(fpath_risk,type="oad"):
 
         """ 
-            This is the risk associated to each node
-            obtained with the Motter model 
+            OUTPUT
+                data: (dataframe)
+                    Load dataframe in the format
+                        node_label  lng lat
         """
 
         if type.lower() == "motter":
             print("Computing intrinsic risk with Motter model")
             toler_index      = "1"   # "0.0"  Tolerance index
-            fname_risk     = "./Output_Motter/Intrinsic_Risk_LngLat.dat" 
 
-            risk_intrinsic_nodes = pd.read_csv(fname_risk, sep=" ", header=0, index_col=0)
+            risk_intrinsic_nodes = pd.read_csv(fpath_risk, sep=" ", header=0, index_col=0)
             risk_intrinsic_nodes = risk_intrinsic_nodes[["lng","lat",toler_index]]
             risk_intrinsic_nodes = risk_intrinsic_nodes.rename(columns={toler_index:"Risk"})
 
         elif type.lower() == "oad":
-
-            respath = "./Output_OAD/lb_10_mu_1_al_0.3"
-
-            print(f"Loading OAD results in {respath}")
-            fname_risk     = "./Output_Motter/Intrinsic_Risk_LngLat.dat" 
-            risk_intrinsic_nodes = pd.read_csv(fname_risk, sep=" ", header=0, index_col=0)
-            risk_intrinsic_nodes = risk_intrinsic_nodes[["lng","lat"]]
-
-            
-            scaling = 0.927136   # Scaling factor to get the relative size of LCC
-            import glob
-            dct = {}
-            nodeflist = glob.glob(respath+"/node_*.dat")
-            for nodefile in nodeflist:
-                node = int(nodefile.split("_")[-2])            # Format node_1234_gillespie.dat
-                if node in risk_intrinsic_nodes.index:   
-                    with open(nodefile, 'r') as file:
-                        item = file.readline()
-                        lcc_gillespie = sum([float(f) for f in item.split()])/len(item.split())
-                        dct[node] = lcc_gillespie
-            dct = {key: value/scaling for key,value in dct.items()}
-            lcc_gillespie  = pd.Series(dct)
-            risk_intrinsic_nodes["Risk"] = 1 - lcc_gillespie
-            risk_intrinsic_nodes = risk_intrinsic_nodes.dropna()
-
-
-        return risk_intrinsic_nodes
+            print(f"Loading OAD results in {fpath_risk}")
+            data = Plotter.load_topology_geodata(name_topology)
+            data = data[["lng","lat"]]
+            LCC = pd.read_csv(fpath_risk,delimiter="\t",index_col=0,names=["LCC"]).squeeze()
+            data["Risk"] = 1 - LCC
+            data.dropna(inplace=True)
+        return data
 
 
 
@@ -211,10 +195,10 @@ class Plotter():
     ########################################
     ## Riskmap plot 
 
-    def plot_us_riskmap(self,evname= "EARL"):
+    def plot_us_riskmap(self,fpath_risk,evname= "EARL",type="oad"):
 
         fig, axes = plt.subplots(figsize=(3,3))
-        risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes()
+        risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
         
         # Figure parameters
         eventpath      = "./prob_failure_storms/"
@@ -362,9 +346,13 @@ if __name__ == "__main__":
     Pjotr = Plotter()
     
     ## Riskmap plot
-    # Pjotr.plot_us_riskmap("EARL")
+    name_topology = "america"
+    r0 = 6
+    r1 = 0.3
+    fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
+    Pjotr.plot_us_riskmap(fpath_risk,"EARL")
 
-    # [Pjotr.plot_us_riskmap(name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
+    # [Pjotr.plot_us_riskmap(fpath_risk,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
 
 
     # Parametric plot
