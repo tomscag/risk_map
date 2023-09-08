@@ -39,10 +39,6 @@ class Plotter():
     def __init__(self) -> None:
         self.figdict = {}   # For saving
 
-
-
-
-
     @staticmethod
     def fragility_model_storm(dist,force,const=1.092e-3,dist0=10):
         """ 
@@ -54,7 +50,7 @@ class Plotter():
     @staticmethod
     def load_topology_geodata(name_topology):
         fpath = f"../Data/Processed/Topologies/{name_topology}/{name_topology}.nodelist"
-        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lat","lng"])
+        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat"])
 
     @staticmethod  
     def load_risk_intrinsic_nodes(fpath_risk,type="oad"):
@@ -77,7 +73,6 @@ class Plotter():
         elif type.lower() == "oad":
             print(f"Loading OAD results in {fpath_risk}")
             data = Plotter.load_topology_geodata(name_topology)
-            data = data[["lng","lat"]]
             LCC = pd.read_csv(fpath_risk,delimiter="\t",index_col=0,names=["LCC"]).squeeze()
             data["Risk"] = 1 - LCC
             data.dropna(inplace=True)
@@ -86,9 +81,9 @@ class Plotter():
 
 
     @staticmethod
-    def load_data_storm(name_storm):
+    def load_data_storm(name_storm,name_topology):
 
-        _dir  = '../Data/Processed/Storms/storm_'
+        _dir  = f'../Data/Processed/Storms/{name_topology}/storm_'
 
         data_storm = pd.read_csv(
                     _dir+name_storm+'.csv', delimiter=' ',
@@ -195,7 +190,7 @@ class Plotter():
     ########################################
     ## Riskmap plot 
 
-    def plot_us_riskmap(self,fpath_risk,evname= "EARL",type="oad"):
+    def plot_us_riskmap(self,fpath_risk,name_topology,evname= "EARL",type="oad"):
 
         fig, axes = plt.subplots(figsize=(3,3))
         risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
@@ -208,7 +203,7 @@ class Plotter():
         scalefact      = 6*10e4  # Motter:7.5  OAD:5
 
         # Load storm's data
-        data_storm     = Plotter.load_data_storm(evname)
+        data_storm     = Plotter.load_data_storm(evname,name_topology)
 
         # Select the snapshot with strongest winds 
         latlng_storm_max = (data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Latitude, 
@@ -289,17 +284,11 @@ class Plotter():
         plt.tick_params(labelsize=1*size_ticksnumber) #if written below cax, it doesnt work
         plt.plot([1.0/(1-dynp_pINI),0.0],[0.0,1/(dynp_pINI*(1-dynp_pINI))], color='#dd181f', linewidth=1.5)
 
-        # index = np.where(t_crit(np.array(r0_list),r)==np.nanmax(t_crit(np.array(r0_list),r)))[0][0]
-        # x_m = r0_list[index]
-        # t_m = np.nanmax(t_crit(np.array(r0_list),r))
-        # plt.plot([x_m, x_m], [1.0*t_m, max(r1_list)], color='#dd181f', linewidth=3)
-        # plt.plot(r0_list, t_crit(np.array(r0_list),r), color='#dd181f', linewidth=3)
-    #    plt.imshow(arr, extent=[-1,1,-1,1],origin='lower', cmap='viridis')
 
         interpolation = "none" # none bilinear bicubic hanning
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
                     origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
-        # im = plt.imshow(arr)
+
         cbar = plt.colorbar(im, cax = fig.add_axes([0.95, 0.12, 0.03, 0.66]), shrink=0.99, pad = 0.07)
         # cbar.ax.set_ylabel(r'$S$', rotation=0, fontsize = 25, labelpad=15)
         cbar.set_ticks([0,0.2,0.4,0.6,0.8])
@@ -346,17 +335,18 @@ if __name__ == "__main__":
     Pjotr = Plotter()
     
     ## Riskmap plot
-    name_topology = "america"
+    name_topology = "europe"
+    evname = "mock2" # "EARL"
     r0 = 6
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
-    Pjotr.plot_us_riskmap(fpath_risk,"EARL")
+    Pjotr.plot_us_riskmap(fpath_risk,name_topology,evname)
 
-    # [Pjotr.plot_us_riskmap(fpath_risk,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
+    # [Pjotr.plot_us_riskmap(fpath_risk,name_topology,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
 
 
     # Parametric plot
-    Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
+    # Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
 
 
 

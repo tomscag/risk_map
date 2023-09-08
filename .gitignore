@@ -1,8 +1,15 @@
-./Analysis/Output_OAD
-./Analysis/Output_Motter
-./Analysis/Functions/__pycache__
+Analysis/Output_OAD
+Analysis/Output_Motter
+Analysis/Functions/__pycache__
+Paper/
+Data/Raw/
 
 
-./*.png
-./*.profile
-./*.pdf
+*.png
+*.profile
+*.pdf
+
+Analysis/*.png
+Analysis/*.html
+Analysis/*.out
+Analysis/*.log
