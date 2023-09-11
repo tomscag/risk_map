@@ -50,7 +50,7 @@ class Plotter():
     @staticmethod
     def load_topology_geodata(name_topology):
         fpath = f"../Data/Processed/Topologies/{name_topology}/{name_topology}.nodelist"
-        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat"])
+        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat","region","subregion"])
 
     @staticmethod  
     def load_risk_intrinsic_nodes(fpath_risk,type="oad"):
@@ -185,8 +185,6 @@ class Plotter():
         browser.quit()
 
 
-
-
     ########################################
     ## Riskmap plot 
 
@@ -319,6 +317,52 @@ class Plotter():
 
 
 
+    #######################################
+    ## Leaflet map
+    def plot_leaflet(self,fpath_risk,name_topology,evname= "EARL",type="oad"):
+        map = folium.Map(tiles="cartodbpositron",location=[39.50, -98.35], zoom_start=4)
+        folium.GeoJson("./us-counties.geojson", name="hello world").add_to(map)
+
+        import json
+        file = open("./us-counties.geojson",'r')
+        state_geo = json.load(file)
+
+        risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
+
+        # Load storm's data
+        data_storm     = Plotter.load_data_storm(evname,name_topology)
+
+        # Select the snapshot with strongest winds 
+        latlng_storm_max = (data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Latitude, 
+                            data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Longitude)
+        force_storm_max  = data_storm.iloc[ data_storm["wmo_wind.x"].idxmax()]["wmo_wind.x"]
+        distances      = [haversine(latlng_storm_max,(Lat,Lon), unit=Unit.KILOMETERS) 
+                         for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
+        
+        # Compute probability of failure of every node
+        risk_intrinsic_nodes["Prob"] = [Plotter.fragility_model_storm(dist,force_storm_max) for dist in distances]
+
+        # Compute risk due to storm
+        scalefact = 1e3
+        risk_intrinsic_nodes["RiskTot"] = risk_intrinsic_nodes["Prob"]*risk_intrinsic_nodes["Risk"]*scalefact
+        risk = risk_intrinsic_nodes.groupby("subregion")["RiskTot"].sum()
+
+
+        folium.Choropleth(
+                geo_data=state_geo,
+                name="choropleth",
+                data=risk,
+                columns=["State", "Risk"],
+                key_on="feature.properties.NAME",  # "feature.id"
+                fill_color="Reds",
+                fill_opacity=0.7,
+                line_opacity=0.2,
+                legend_name="Risk",
+            ).add_to(map)
+        
+        map = Plotter.add_storm_to_map(map,data_storm)
+        map.save(evname+'.html')
+
 
 
 ############################################
@@ -334,13 +378,18 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    ## Riskmap plot
-    name_topology = "europe"
-    evname = "mock2" # "EARL"
-    r0 = 6
+    name_topology = "america"
+    evname = "ARTHUR" # "EARL"  mock2
+    r0 = 10
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
-    Pjotr.plot_us_riskmap(fpath_risk,name_topology,evname)
+
+    ## Leaflet map
+    Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
+
+
+    ## Riskmap plot
+    # Pjotr.plot_us_riskmap(fpath_risk,name_topology,evname)
 
     # [Pjotr.plot_us_riskmap(fpath_risk,name_topology,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
 
