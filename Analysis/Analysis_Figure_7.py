@@ -44,8 +44,12 @@ def load_topology(fname,NUM_NODES):
             NUM_NODES = 1467
             return edgelist, NUM_NODES
     elif fname=="airports":
-        _fpath = "../Data/Processed/Airports/airports_world.edgelist"
-        return nx.read_edgelist(_fpath,nodetype=int), NUM_NODES
+        _fpath = "../Data/Processed/Topologies/airports/airports_world.edgelist"
+        edgelist = nx.read_edgelist(_fpath,nodetype=int) 
+        if NUM_NODES < 3182: # If less than the number, sample with configuration model
+            return sample_graph_configuration_model(edgelist,NUM_NODES), NUM_NODES
+        else:
+            return edgelist, NUM_NODES
     else:
         print("Topology not recognized \n EXIT")
         return
@@ -90,7 +94,7 @@ def analyze(r0,r1_list,filepath_output):
         with open(FNAME_OUTPUT,"a+") as file:
             # file.write(str(r1) + "\t" + str(O) + "\n")
             file.write(f"{r1:.6f}"+"\t"+f"{O:.6f}"+"\n") 
-        if O < 1e-5: # 
+        if O < 1e-3: # 
             break   
 
 
@@ -98,11 +102,11 @@ def analyze(r0,r1_list,filepath_output):
 #########################################################
 #########################################################
 
-name_topology   = "europe" # america europe airports random
+name_topology   = "airports" # america europe airports random
 
 
-NUM_NODES    = 5000   # 1000
-NUM_SAMPLES  = 75     # 100
+NUM_NODES    = 3182   # 1000
+NUM_SAMPLES  = 50     # 100
 MAX_TSTEP    = 2000   # 1000
 dynp_pINI    = 0.05   # Fraction of disrupted nodes on the network as initial condition
 
@@ -136,7 +140,7 @@ r1_list = np.linspace(0,1.1*(1/dynp_pINI),50)
 
 def apply_async_with_callback():
     """ Parallelize the execution of the function analyze """
-    pool = mp.Pool(8)
+    pool = mp.Pool(20)
     for i in range(len(r0_list)):
         pool.apply_async(analyze, args = (r0_list[i], r1_list, filepath_output, ))
         # analyze(r0_list[i], r1_list, filepath_output)
