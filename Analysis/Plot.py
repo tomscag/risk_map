@@ -39,18 +39,25 @@ class Plotter():
     def __init__(self) -> None:
         self.figdict = {}   # For saving
 
+
+
+    # static methods for risk map
+
     @staticmethod
     def fragility_model_storm(dist,force,const=1.092e-3,dist0=10):
         """ 
         Return the probability of a physical damage
         at distance (dist) and with wind (force)
         """
-        return  const*((force/65)**(8.02))/(dist+dist0)**2
+        if dist > 1000:
+            return 0
+        else:
+            return  const*((force/65)**(8.02))/(dist+dist0)**2
 
     @staticmethod
     def load_topology_geodata(name_topology):
         fpath = f"../Data/Processed/Topologies/{name_topology}/{name_topology}.nodelist"
-        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat","region","subregion"])
+        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat","geoid"],usecols=[0,1,2,3])
 
     @staticmethod  
     def load_risk_intrinsic_nodes(fpath_risk,type="oad"):
@@ -79,7 +86,6 @@ class Plotter():
         return data
 
 
-
     @staticmethod
     def load_data_storm(name_storm,name_topology):
 
@@ -93,57 +99,7 @@ class Plotter():
         return data_storm
     
 
-    # static methods for risk map
-
-    @staticmethod
-    def aggregate_polygons(data_nodes,resol):
-        """ Aggregate nodes into H3 polygons 
-                data_nodes must have lng and lat columns
-        """
-        df_h3      = data_nodes.h3.geo_to_h3(resol)    # Assign points to hexagons
-
-        # Aggregate data inside hexagons by summing (the risk is cumulative)
-        data_nodes = df_h3.drop(columns=['lng', 'lat']).dropna(axis=0).groupby('h3_0'+str(resol)).sum() 
-        gdf_h3     = data_nodes.h3.h3_to_geo_boundary()   # Extract vertices of each hexagon (geometry)
-
-        df       = df_h3.drop(columns=['lng', 'lat']).dropna(axis=0).groupby('h3_0'+str(resol)).mean()
-        return gdf_h3
-
-
-    @staticmethod
-    def create_map(gdf_h3,normalize=False):
-
-        """ Create folium map """
-
-        
-        map = folium.Map(location=[39.50, -98.35], zoom_start=4)
-
-        
-        if normalize:
-            dz = gdf_h3["Risk"]  
-            dz = dz.apply(lambda x: x/max(dz))
-        else:
-            dz = gdf_h3["Risk"]
-        fill_opacity = 0.75
-        edges_color  = "#555555"
-        png_enabled  = True
-        cmap = mcolors.LinearSegmentedColormap.from_list('mycmap', ['#444444', '#FF0000']) # FF0000 = Red
-        
-        colors = cmap(dz)
-        hex_colors = [mcolors.to_hex(color) for color in colors]
-        hexagons = gdf_h3.index
-
-        count = 0
-        # Draw hexagons in the map
-        for hexagon in gdf_h3.iloc:
-            vertices = list(h3.h3_to_geo_boundary(hexagon.name))
-            vertices.append(vertices[0]) # Add the first vertex to the end to close the polygon
-            folium.vector_layers.Polygon(locations=vertices, color=edges_color, fill=True, 
-                                        fill_color=hex_colors[count], fill_opacity=fill_opacity,
-                                        png_enabled=png_enabled).add_to(map)
-            count = count + 1
-        
-        return map
+    
 
     @staticmethod
     def add_storm_to_map(map,data_storm):
@@ -183,49 +139,6 @@ class Plotter():
         time.sleep(delay)
         browser.save_screenshot(outdir+filename+'.png')
         browser.quit()
-
-
-    ########################################
-    ## Riskmap plot 
-
-    def plot_us_riskmap(self,fpath_risk,name_topology,evname= "EARL",type="oad"):
-
-        fig, axes = plt.subplots(figsize=(3,3))
-        risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
-        
-        # Figure parameters
-        eventpath      = "./prob_failure_storms/"
-        width, height  = (2000,1500)   # Pixels
-        bounds         = ([16.4, -95.00],[55.5, -87.00])   # (south_west, north_east)        
-        resol          = 3
-        scalefact      = 6*10e4  # Motter:7.5  OAD:5
-
-        # Load storm's data
-        data_storm     = Plotter.load_data_storm(evname,name_topology)
-
-        # Select the snapshot with strongest winds 
-        latlng_storm_max = (data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Latitude, 
-                            data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Longitude)
-        force_storm_max  = data_storm.iloc[ data_storm["wmo_wind.x"].idxmax()]["wmo_wind.x"]
-        distances      = [haversine(latlng_storm_max,(Lat,Lon), unit=Unit.KILOMETERS) 
-                         for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
-        
-        # Compute probability of failure of every node
-        prob_failure_nodes = [Plotter.fragility_model_storm(dist,force_storm_max) for dist in distances]
-
-        # Compute risk = risk_intrinsic_nodes * prob_failure_nodes
-        risk_event_nodes = pd.Series([A*B*scalefact for A,B in  zip(risk_intrinsic_nodes.Risk, prob_failure_nodes)],name="Risk", index=risk_intrinsic_nodes.index)
-        risk_event_nodes = pd.concat([risk_intrinsic_nodes[["lng","lat"]],risk_event_nodes],axis=1,join="outer")
-        
-        gdf_h3     = Plotter.aggregate_polygons(risk_event_nodes,resol)
-
-
-        map = Plotter.create_map(gdf_h3,False)
-        map = Plotter.add_storm_to_map(map,data_storm)
-        Plotter.export_map(map,bounds, width, height,evname,"./",delay=2.0)
-
-        # Save
-        self.figdict[f'risk_map_{evname}'] = fig 
 
 
     ##################################
@@ -283,7 +196,7 @@ class Plotter():
         plt.plot([1.0/(1-dynp_pINI),0.0],[0.0,1/(dynp_pINI*(1-dynp_pINI))], color='#dd181f', linewidth=1.5)
 
 
-        interpolation = "none" # none bilinear bicubic hanning
+        interpolation = "bilinear" # none bilinear bicubic hanning
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
                     origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
 
@@ -317,15 +230,28 @@ class Plotter():
 
 
 
-    #######################################
-    ## Leaflet map
-    def plot_leaflet(self,fpath_risk,name_topology,evname= "EARL",type="oad"):
-        map = folium.Map(tiles="cartodbpositron",location=[39.50, -98.35], zoom_start=4)
-        folium.GeoJson("./us-counties.geojson", name="hello world").add_to(map)
 
-        import json
-        file = open("./us-counties.geojson",'r')
-        state_geo = json.load(file)
+
+
+
+
+
+    #######################################
+    ## Risk map plot (leaflet)
+
+    def plot_leaflet(self,fpath_risk,name_topology,evname= "EARL",type="oad"):
+
+        fig, axes = plt.subplots(figsize=(3,3))
+        width, height  = (2000,1500)   # Pixels
+        bounds         = ([16.4, -95.00],[55.5, -87.00])   # (south_west, north_east)     
+
+        crs =  "EPSG3857"   # coordinate reference systems   EPSG3857 (default)  EPSG4326
+        # Create map
+        map = folium.Map(tiles="cartodbpositron",location=[39.50, -98.35], 
+                         zoom_start=4, zoom_control=False, crs=crs)
+
+
+        state_geo = "./eu-provinces.geojson"   # "./eu-provinces.geojson" "./us-counties.geojson"
 
         risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
 
@@ -343,28 +269,46 @@ class Plotter():
         risk_intrinsic_nodes["Prob"] = [Plotter.fragility_model_storm(dist,force_storm_max) for dist in distances]
 
         # Compute risk due to storm
-        scalefact = 1e3
-        risk_intrinsic_nodes["RiskTot"] = risk_intrinsic_nodes["Prob"]*risk_intrinsic_nodes["Risk"]*scalefact
-        risk = risk_intrinsic_nodes.groupby("subregion")["RiskTot"].sum()
+        scalefact = 2e4 
+        # risk_intrinsic_nodes["RiskTot"] = risk_intrinsic_nodes["Prob"]*risk_intrinsic_nodes["Risk"]*scalefact
+        risk_intrinsic_nodes["RiskTot"] = [A*B*scalefact for A,B in zip(risk_intrinsic_nodes["Prob"],risk_intrinsic_nodes["Risk"])]
+        risk = risk_intrinsic_nodes.groupby("geoid")["RiskTot"].sum()
 
+        folium.GeoJson(
+            state_geo,
+            style_function = lambda feature: {
+                'fillColor': Plotter.my_color_function(feature,risk),
+                'color': '#080808',       #border color for the color fills
+                'weight': .75,            #how thick the border has to be
+                'opacity':1,
+                'fillOpacity':.85,
+                # 'dashArray': '5, 3'  #dashed lines length,space between them
+            }
+        ).add_to(map)
 
-        folium.Choropleth(
-                geo_data=state_geo,
-                name="choropleth",
-                data=risk,
-                columns=["State", "Risk"],
-                key_on="feature.properties.NAME",  # "feature.id"
-                fill_color="Reds",
-                fill_opacity=0.7,
-                line_opacity=0.2,
-                legend_name="Risk",
-            ).add_to(map)
-        
         map = Plotter.add_storm_to_map(map,data_storm)
+        
         map.save(evname+'.html')
 
 
 
+
+    def my_color_function(feature,risk):
+        """ Maps low values to green and hugh values to red."""
+        
+        try:
+            value = risk[feature['properties']['NUTS_ID']]   # GEOID
+            if  value <= 1e-4:
+                return '#ffffff'   # white
+            elif value >= 1e-4 and value <= 5e-3:
+                return '#2b83ba'   # blue
+            elif value >= 5e-3 and value <= 1.5e-2:
+                return '#fdae61'
+            elif value > 1.5e-2:
+                return '#d7191c'   # red
+        except:
+            return '#808080' #'#ffffff'
+        
 ############################################
 ############################################
 ############################################
@@ -378,14 +322,14 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    name_topology = "america"
-    evname = "ARTHUR" # "EARL"  mock2
-    r0 = 10
+    name_topology = "europe"
+    evname = "mock1" # "EARL"  mock2
+    r0 = 8
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
 
     ## Leaflet map
-    Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
+    # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
 
     ## Riskmap plot
@@ -395,7 +339,7 @@ if __name__ == "__main__":
 
 
     # Parametric plot
-    # Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
+    Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
 
 
 
