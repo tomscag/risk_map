@@ -60,22 +60,22 @@ class Plotter():
         return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat","geoid"],usecols=[0,1,2,3])
 
     @staticmethod  
-    def load_risk_intrinsic_nodes(fpath_risk,type="oad"):
+    def damage_if_nodes_fail(fpath_risk,type="oad"):
 
         """ 
             OUTPUT
                 data: (dataframe)
-                    Load dataframe in the format
-                        node_label  lng lat
+                    Return the damage (Risk) when that node fails, computed as 1-LCC
+                        node_label  lng lat Risk
         """
 
         if type.lower() == "motter":
             print("Computing intrinsic risk with Motter model")
             toler_index      = "1"   # "0.0"  Tolerance index
 
-            risk_intrinsic_nodes = pd.read_csv(fpath_risk, sep=" ", header=0, index_col=0)
-            risk_intrinsic_nodes = risk_intrinsic_nodes[["lng","lat",toler_index]]
-            risk_intrinsic_nodes = risk_intrinsic_nodes.rename(columns={toler_index:"Risk"})
+            data = pd.read_csv(fpath_risk, sep=" ", header=0, index_col=0)
+            data = data[["lng","lat",toler_index]]
+            data = data.rename(columns={toler_index:"Risk"})
 
         elif type.lower() == "oad":
             print(f"Loading OAD results in {fpath_risk}")
@@ -231,7 +231,7 @@ class Plotter():
             using the selected fragility model
             Returns the risk aggregated by geographical region
         '''
-        risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
+        risk_intrinsic_nodes = Plotter.damage_if_nodes_fail(fpath_risk,type)
 
         # Load storm's data
         data_storm     = Plotter.load_data_storm(evname,name_topology)
