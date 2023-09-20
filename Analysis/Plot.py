@@ -339,14 +339,14 @@ if __name__ == "__main__":
     evname = "mock2" # "EARL"
     r0 = 6
     r1 = 0.3
-    fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
-    Pjotr.plot_us_riskmap(fpath_risk,name_topology,evname)
+    # fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
+    # Pjotr.plot_us_riskmap(fpath_risk,name_topology,evname)
 
     # [Pjotr.plot_us_riskmap(fpath_risk,name_topology,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
 
 
     # Parametric plot
-    # Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
+    Pjotr.plot_heatmap2d(name_topology="airports",NUM_NODES=3182,NUM_SAMPLES=50,MAX_TSTEP=2000)
 
 
 
