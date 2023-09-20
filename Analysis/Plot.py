@@ -49,7 +49,7 @@ class Plotter():
         Return the probability of a physical damage
         at distance (dist) and with wind (force)
         """
-        if dist > 1000:
+        if dist > 1800:
             return 0
         else:
             return  const*((force/65)**(8.02))/(dist+dist0)**2
@@ -102,11 +102,13 @@ class Plotter():
     
 
     @staticmethod
-    def add_storm_to_map(map,data_storm):
+    def add_storm_to_map(map,evname,name_topology):
 
         weight = 5
         color  = "#FFFF00"
 
+        # Load data of the storm
+        data_storm     = Plotter.load_data_storm(evname,name_topology)
         pos_storm = [(lat,lon) for lon,lat in  zip(data_storm["Longitude"], data_storm["Latitude"])]
         folium.PolyLine(locations=pos_storm, color=color,weight=weight).add_to(map)
         for lat,lon,pdm in zip(data_storm["Latitude"],data_storm["Longitude"],data_storm["PDM"]):
@@ -187,8 +189,6 @@ class Plotter():
                 # S.append(row[0:97])
                 S.append(row)
 
-
-
         arr = np.transpose(np.array(S, dtype=float))
 
 
@@ -216,24 +216,37 @@ class Plotter():
         # xticks = [1, 2.5, 4]
         # plt.xticks([0.5,1.0,1.5,2.0])
         
-        # plt.text(0.025,0.06, r'{\fontfamily{ptm}\selectfont Non-percolating}', color='white', horizontalalignment='left',verticalalignment='center',fontsize=size_text,transform=ax.transAxes)
-        # plt.text(0.95,0.9, r'{\fontfamily{ptm}\selectfont Percolating}', color='black', horizontalalignment='right',verticalalignment='center',fontsize=size_text,transform=ax.transAxes)
         plt.tick_params(labelsize=size_ticksnumber)
-        
-        # plt.text(-0.25, 1, r"$(a)$", horizontalalignment='left',verticalalignment='center',transform=ax.transAxes, size=0.9*size_axeslabel)
-        # plt.title(f"{name_topology} nodes: {NUM_NODES}")
+
         
         # Save
         self.figdict[f'heat_map'] = fig 
 
         return
 
+    @staticmethod
+    def compute_risk_from_event(evname,name_topology,fpath_risk,type):
+        
+        risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
 
+        # Load storm's data
+        data_storm     = Plotter.load_data_storm(evname,name_topology)
 
+        # Select the snapshot with strongest winds 
+        latlng_storm_max = (data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Latitude, 
+                            data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Longitude)
+        force_storm_max  = data_storm.iloc[ data_storm["wmo_wind.x"].idxmax()]["wmo_wind.x"]
+        distances      = [haversine(latlng_storm_max,(Lat,Lon), unit=Unit.KILOMETERS) 
+                         for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
+        
+        # Compute probability of failure of every node
+        risk_intrinsic_nodes["Prob"] = [Plotter.fragility_model_storm(dist,force_storm_max) for dist in distances]
 
-
-
-
+        # Compute risk due to storm
+        scalefact = 1e4   #2e4
+        # risk_intrinsic_nodes["RiskTot"] = risk_intrinsic_nodes["Prob"]*risk_intrinsic_nodes["Risk"]*scalefact
+        risk_intrinsic_nodes["RiskTot"] = [A*B*scalefact for A,B in zip(risk_intrinsic_nodes["Prob"],risk_intrinsic_nodes["Risk"])]
+        return risk_intrinsic_nodes.groupby("geoid")["RiskTot"].sum()        
 
 
     #######################################
@@ -252,26 +265,7 @@ class Plotter():
 
         state_geo = f"../Data/Processed/Topologies/{name_topology}/{name_topology}-counties.geojson"
 
-        risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
-
-        # Load storm's data
-        data_storm     = Plotter.load_data_storm(evname,name_topology)
-
-        # Select the snapshot with strongest winds 
-        latlng_storm_max = (data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Latitude, 
-                            data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Longitude)
-        force_storm_max  = data_storm.iloc[ data_storm["wmo_wind.x"].idxmax()]["wmo_wind.x"]
-        distances      = [haversine(latlng_storm_max,(Lat,Lon), unit=Unit.KILOMETERS) 
-                         for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
-        
-        # Compute probability of failure of every node
-        risk_intrinsic_nodes["Prob"] = [Plotter.fragility_model_storm(dist,force_storm_max) for dist in distances]
-
-        # Compute risk due to storm
-        scalefact = 2e4 
-        # risk_intrinsic_nodes["RiskTot"] = risk_intrinsic_nodes["Prob"]*risk_intrinsic_nodes["Risk"]*scalefact
-        risk_intrinsic_nodes["RiskTot"] = [A*B*scalefact for A,B in zip(risk_intrinsic_nodes["Prob"],risk_intrinsic_nodes["Risk"])]
-        risk = risk_intrinsic_nodes.groupby("geoid")["RiskTot"].sum()
+        risk = Plotter.compute_risk_from_event(evname,name_topology,fpath_risk,type)
 
         folium.GeoJson(
             state_geo,
@@ -285,7 +279,7 @@ class Plotter():
             }
         ).add_to(map)
 
-        map = Plotter.add_storm_to_map(map,data_storm)
+        map = Plotter.add_storm_to_map(map,evname,name_topology)
         
         map.save(evname+'.html')
 
@@ -298,7 +292,7 @@ class Plotter():
         try:
             value = risk[feature['properties']['GEOID']]   # 
             if  value <= 1e-4:
-                return '#ffffff'   # white
+                return '#808080'   # gray
             elif value >= 1e-4 and value <= 5e-3:
                 return '#2b83ba'   # blue
             elif value >= 5e-3 and value <= 1.5e-2:
@@ -306,7 +300,7 @@ class Plotter():
             elif value > 1.5e-2:
                 return '#d7191c'   # red
         except:
-            return '#808080' #'#ffffff'
+            return '#ffffff' #'#ffffff'   #808080
         
 ############################################
 ############################################
