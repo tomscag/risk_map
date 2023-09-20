@@ -226,24 +226,27 @@ class Plotter():
 
     @staticmethod
     def compute_risk_from_event(evname,name_topology,fpath_risk,type):
-        
+        '''
+            Compute the cumulative risk for each storm's snapshot 
+            using the selected fragility model
+            Returns the risk aggregated by geographical region
+        '''
         risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
 
         # Load storm's data
         data_storm     = Plotter.load_data_storm(evname,name_topology)
 
-        # Select the snapshot with strongest winds 
-        latlng_storm_max = (data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Latitude, 
-                            data_storm.iloc[data_storm["wmo_wind.x"].idxmax()].Longitude)
-        force_storm_max  = data_storm.iloc[ data_storm["wmo_wind.x"].idxmax()]["wmo_wind.x"]
-        distances      = [haversine(latlng_storm_max,(Lat,Lon), unit=Unit.KILOMETERS) 
-                         for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
-        
-        # Compute probability of failure of every node
-        risk_intrinsic_nodes["Prob"] = [Plotter.fragility_model_storm(dist,force_storm_max) for dist in distances]
+        risk_intrinsic_nodes["Prob"] = 0
+        for snapshot in data_storm.iterrows():
+            latlon_storm = (snapshot[1]['Latitude'], snapshot[1]['Longitude'])
+            pdm_storm = snapshot[1]['PDM'] # Potential Damage Multiplier
+            distances  = [haversine(latlon_storm,(Lat,Lon), unit=Unit.KILOMETERS) 
+                        for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
+            risk_intrinsic_nodes["Prob"] += [Plotter.fragility_model_storm(dist,pdm_storm) for dist in distances]
+
 
         # Compute risk due to storm
-        scalefact = 1e4   #2e4
+        scalefact = 5e2   #2e4
         # risk_intrinsic_nodes["RiskTot"] = risk_intrinsic_nodes["Prob"]*risk_intrinsic_nodes["Risk"]*scalefact
         risk_intrinsic_nodes["RiskTot"] = [A*B*scalefact for A,B in zip(risk_intrinsic_nodes["Prob"],risk_intrinsic_nodes["Risk"])]
         return risk_intrinsic_nodes.groupby("geoid")["RiskTot"].sum()        
