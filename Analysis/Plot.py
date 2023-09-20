@@ -245,11 +245,17 @@ class Plotter():
             risk_intrinsic_nodes["Prob"] += [Plotter.fragility_model_storm(dist,pdm_storm) for dist in distances]
 
 
-        # Compute risk due to storm
-        scalefact = 5e2   #2e4
-        # risk_intrinsic_nodes["RiskTot"] = risk_intrinsic_nodes["Prob"]*risk_intrinsic_nodes["Risk"]*scalefact
+        
+        # Compute risk as damage times the cumulative probability
+        scalefact = 0.75e1
         risk_intrinsic_nodes["RiskTot"] = [A*B*scalefact for A,B in zip(risk_intrinsic_nodes["Prob"],risk_intrinsic_nodes["Risk"])]
-        return risk_intrinsic_nodes.groupby("geoid")["RiskTot"].sum()        
+
+        norm_factor = 0.0006864062438303901  # To normalize risk to the strongest event
+        risk_aggregated = risk_intrinsic_nodes.groupby("geoid")["RiskTot"].sum()
+        risk_aggregated.drop("Other",inplace=True)
+        risk_aggregated = risk_aggregated/norm_factor
+
+        return risk_aggregated        
 
 
     #######################################
@@ -294,14 +300,18 @@ class Plotter():
         
         try:
             value = risk[feature['properties']['GEOID']]   # 
-            if  value <= 1e-4:
-                return '#808080'   # gray
-            elif value >= 1e-4 and value <= 5e-3:
+            if  value >0 and value <= 0.2:
                 return '#2b83ba'   # blue
-            elif value >= 5e-3 and value <= 1.5e-2:
-                return '#fdae61'
-            elif value > 1.5e-2:
+            elif value >= 0.2 and value <= 0.4:
+                return '#abd9e9'   # light blue
+            elif value >= 0.4 and value <= 0.6:
+                return '#ffffbf'   # yellow
+            elif value >= 0.6 and value <= 0.8:
+                return '#fdae61'   # orange
+            elif value > 0.8:
                 return '#d7191c'   # red
+            else:
+                return '#ffffff'
         except:
             return '#ffffff' #'#ffffff'   #808080
         
