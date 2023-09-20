@@ -250,8 +250,7 @@ class Plotter():
         map = folium.Map(tiles="cartodbpositron",location=[39.50, -98.35], 
                          zoom_start=4, zoom_control=False, crs=crs)
 
-
-        state_geo = "./eu-provinces.geojson"   # "./eu-provinces.geojson" "./us-counties.geojson"
+        state_geo = f"../Data/Processed/Topologies/{name_topology}/{name_topology}-counties.geojson"
 
         risk_intrinsic_nodes = Plotter.load_risk_intrinsic_nodes(fpath_risk,type)
 
@@ -297,7 +296,7 @@ class Plotter():
         """ Maps low values to green and hugh values to red."""
         
         try:
-            value = risk[feature['properties']['NUTS_ID']]   # GEOID
+            value = risk[feature['properties']['GEOID']]   # 
             if  value <= 1e-4:
                 return '#ffffff'   # white
             elif value >= 1e-4 and value <= 5e-3:
@@ -322,14 +321,14 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    name_topology = "europe"
-    evname = "mock1" # "EARL"  mock2
-    r0 = 8
+    name_topology = "america"
+    evname = "EARL" # "EARL"  mock2
+    r0 = 10
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
 
     ## Leaflet map
-    # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
+    Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
 
     ## Riskmap plot
@@ -339,7 +338,7 @@ if __name__ == "__main__":
 
 
     # Parametric plot
-    Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
+    # Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
 
 
 
