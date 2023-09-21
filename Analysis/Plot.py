@@ -247,7 +247,7 @@ class Plotter():
 
         
         # Compute risk as damage times the cumulative probability
-        scalefact = 0.75e1
+        scalefact = 1e0
         risk_intrinsic_nodes["RiskTot"] = [A*B*scalefact for A,B in zip(risk_intrinsic_nodes["Prob"],risk_intrinsic_nodes["Risk"])]
 
         norm_factor = 0.0006864062438303901  # To normalize risk to the strongest event
@@ -297,18 +297,19 @@ class Plotter():
 
     def my_color_function(feature,risk):
         """ Maps low values to green and hugh values to red."""
-        
+        bounds = np.linspace(0,1,6)
+        bounds = np.logspace(-6,0,6)
         try:
             value = risk[feature['properties']['GEOID']]   # 
-            if  value >0 and value <= 0.2:
+            if  value >bounds[0] and value <= bounds[1]:
                 return '#2b83ba'   # blue
-            elif value >= 0.2 and value <= 0.4:
+            elif value >= bounds[1] and value <= bounds[2]:
                 return '#abd9e9'   # light blue
-            elif value >= 0.4 and value <= 0.6:
+            elif value >= bounds[2] and value <= bounds[3]:
                 return '#ffffbf'   # yellow
-            elif value >= 0.6 and value <= 0.8:
+            elif value >= bounds[3] and value <= bounds[4]:
                 return '#fdae61'   # orange
-            elif value > 0.8:
+            elif value > bounds[4]:
                 return '#d7191c'   # red
             else:
                 return '#ffffff'
@@ -329,7 +330,7 @@ if __name__ == "__main__":
     Pjotr = Plotter()
     
     name_topology = "america"
-    evname = "EARL" # "EARL"  mock2
+    evname = "MATTHEW" # "EARL" MATTHEW  mock2
     r0 = 10
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
