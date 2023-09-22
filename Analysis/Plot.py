@@ -239,10 +239,11 @@ class Plotter():
         risk_intrinsic_nodes["Prob"] = 0
         for snapshot in data_storm.iterrows():
             latlon_storm = (snapshot[1]['Latitude'], snapshot[1]['Longitude'])
-            pdm_storm = snapshot[1]['PDM'] # Potential Damage Multiplier
+            # pdm_storm = snapshot[1]['PDM'] # Potential Damage Multiplier
+            wind_strength = snapshot[1]['wmo_wind.x'] # Wind strength
             distances  = [haversine(latlon_storm,(Lat,Lon), unit=Unit.KILOMETERS) 
                         for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
-            risk_intrinsic_nodes["Prob"] += [Plotter.fragility_model_storm(dist,pdm_storm) for dist in distances]
+            risk_intrinsic_nodes["Prob"] += [Plotter.fragility_model_storm(dist,wind_strength) for dist in distances]
 
 
         
@@ -312,7 +313,7 @@ class Plotter():
             elif value > bounds[4]:
                 return '#d7191c'   # red
             else:
-                return '#ffffff'
+                return '#ffffff' # blue 
         except:
             return '#ffffff' #'#ffffff'   #808080
         
@@ -329,9 +330,9 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    name_topology = "america"
-    evname = "MATTHEW" # "EARL" MATTHEW  mock2
-    r0 = 10
+    name_topology = "europe"
+    evname = "mock1" # EARL MATTHEW KARL GONZALO mock2
+    r0 = 8
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
 
