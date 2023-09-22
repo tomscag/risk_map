@@ -98,7 +98,25 @@ class Plotter():
 
         return data_storm
     
+    @staticmethod
+    def load_path_topology(name_topology):
+        '''
+        '''
+        if name_topology=="america":
+            return  "../Data/Processed/Topologies/america/powergrid_north_america.el", \
+                    "../Data/Processed/Topologies/america/america.nodelist"
 
+        elif name_topology=="europe":
+            return "../Data/Processed/Topologies/europe/powergrid_europe.el", \
+                    "../Data/Processed/Topologies/europe/europe.nodelist"
+        
+        elif name_topology=="airports":
+            return "../Data/Processed/Topologies/airports/airports_world.edgelist",\
+                    None  # To do
+        
+        else:
+            print("Topology not recognized \n EXIT")
+            return
     
 
     @staticmethod
@@ -317,6 +335,66 @@ class Plotter():
         except:
             return '#ffffff' #'#ffffff'   #808080
         
+
+
+    ##########################################    
+    ### Plot network infrastructure as a map
+
+    def plot_network(self,name_topology):
+        "Plot the networks"
+        # import networkx as nx
+
+        path_edgelist, path_nodelist = Plotter.load_path_topology(name_topology)
+        # G = nx.read_edgelist(path_edgelist)
+        # G = G.subgraph([str(item) for item in df_PowerGrid.index])
+        data_nodes = pd.read_csv(path_nodelist,sep=" ",index_col=0, usecols=[0,1,2],names=["label","lon","lat"])
+        data_edges = pd.read_csv(path_edgelist,sep=" ",names=["node1","node2"])
+        fig, ax = plt.subplots(figsize=(6, 6))
+
+        crs =  "EPSG3857"   # coordinate reference systems   EPSG3857 (default)  EPSG4326
+        # Create map
+        map = folium.Map(tiles="cartodbpositron",location=[39.50, -98.35], 
+                         zoom_start=4.5, zoom_control=False, crs=crs)
+
+
+        # Add edges to map
+        data_edges.apply( lambda edge:  folium.PolyLine( (
+                (data_nodes.loc[edge.node1].lat,data_nodes.loc[edge.node1].lon),
+                (data_nodes.loc[edge.node2].lat,data_nodes.loc[edge.node2].lon),
+                ),
+                color = "#636363"
+                ).add_to(map)    
+                ,axis=1)
+
+        # Add nodes to map
+        data_nodes.apply(lambda point: folium.CircleMarker(location=[point.lat, point.lon],
+                        radius=1,color="#252525", opacity=0.75,
+                        weight=5
+                        ).add_to(map),axis=1)
+
+        if name_topology == "america":
+            list_event  = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
+            for event in list_event:
+                data_storm = Plotter.load_data_storm(event,name_topology)
+                data_storm.apply(lambda point: folium.CircleMarker(location=[point.Latitude, point.Longitude],
+                    radius=0.05*point["wmo_wind.x"],color="#a50f15", opacity=0.75,
+                    weight=5
+                    ).add_to(map),axis=1)
+                folium.PolyLine(tuple((a,b) for a,b in zip(data_storm.Latitude, data_storm.Longitude)) ,
+                                color = "#de2d26",
+                                ).add_to(map)
+
+
+
+        map.save(name_topology+'.html')
+
+
+
+        # plt.xlim([-135,-55])
+        # plt.ylim([10,75])
+        # if savefig:
+        #     plt.savefig(f"./src/power_grid.pdf",format="pdf", bbox_inches="tight")
+        
 ############################################
 ############################################
 ############################################
@@ -337,7 +415,7 @@ if __name__ == "__main__":
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
 
     ## Leaflet map
-    Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
+    # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
 
     ## Riskmap plot
@@ -350,6 +428,8 @@ if __name__ == "__main__":
     # Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
 
 
+    # Plot Map of the network infrstructure
+    Pjotr.plot_network(name_topology)
 
     ## Show or save
     save = True

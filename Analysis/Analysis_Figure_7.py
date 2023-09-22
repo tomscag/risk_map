@@ -28,7 +28,7 @@ def load_topology(fname,NUM_NODES):
     elif fname=="full":
         return nx.complete_graph(NUM_NODES), NUM_NODES
     elif fname=="america":
-        _fpath   = "../Data/Processed/Topologies/Powergrid_NorthAmerica/powergrid_north_america.el"
+        _fpath   = "../Data/Processed/Topologies/america/powergrid_north_america.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)
         if NUM_NODES < 16167:    # If less than the number, sample with configuration model
             return sample_graph_configuration_model(edgelist,NUM_NODES), NUM_NODES
@@ -36,7 +36,7 @@ def load_topology(fname,NUM_NODES):
             NUM_NODES = 16167
             return edgelist, NUM_NODES
     elif fname=="europe":
-        _fpath   = "../Data/Processed/Topologies/Powergrid_Europe/powergrid_europe.el"
+        _fpath   = "../Data/Processed/Topologies/europe/powergrid_europe.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)    
         if NUM_NODES < 1467: # If less than the number, sample with configuration model
             return sample_graph_configuration_model(edgelist,NUM_NODES), NUM_NODES
@@ -44,7 +44,7 @@ def load_topology(fname,NUM_NODES):
             NUM_NODES = 1467
             return edgelist, NUM_NODES
     elif fname=="airports":
-        _fpath = "../Data/Processed/Airports/airports_world.edgelist"
+        _fpath = "../Data/Processed/Topologies/airports/airports_world.edgelist"
         return nx.read_edgelist(_fpath,nodetype=int), NUM_NODES
     else:
         print("Topology not recognized \n EXIT")
