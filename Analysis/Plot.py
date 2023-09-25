@@ -336,6 +336,30 @@ class Plotter():
             return '#ffffff' #'#ffffff'   #808080
         
 
+    ##########################################
+    ### Plot total risk
+
+    def plot_total_risk(self,fpath_risk,name_topology):
+        events = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
+        total_risk = pd.Series(index=events, dtype = float)
+
+        fig, ax = plt.subplots(figsize=(12,6))
+        size_ticksnumber = 15
+        size_axeslabel   = 32
+        for evname in events:
+            risk = Plotter.compute_risk_from_event(evname,name_topology,fpath_risk,type="oad")
+            total_risk.loc[evname] = risk.sum()
+            # total_risk.append()
+        
+        total_risk = total_risk.sort_values(ascending=False)
+
+        plt.bar(total_risk.index,total_risk)
+        plt.xticks(rotation = 60)
+        plt.tick_params(labelsize=size_ticksnumber)
+        ax.set_ylabel(r"$\overline{R}$", {'fontsize': size_axeslabel})
+        ax.set_xlabel(r"Storms", {'fontsize': size_axeslabel})
+        # Save
+        self.figdict[f'total_risk'] = fig 
 
     ##########################################    
     ### Plot network infrastructure as a map
@@ -408,28 +432,28 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    name_topology = "europe"
+    name_topology = "america"
     evname = "mock1" # EARL MATTHEW KARL GONZALO mock2
-    r0 = 8
+    r0 = 10
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
 
-    ## Leaflet map
+    ##      1) Leaflet map
     # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
-
-    ## Riskmap plot
-    # Pjotr.plot_us_riskmap(fpath_risk,name_topology,evname)
-
-    # [Pjotr.plot_us_riskmap(fpath_risk,name_topology,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
+    # [Pjotr.plot_leaflet(fpath_risk,name_topology,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
 
 
-    # Parametric plot
+    ##      2) Parametric plot
     # Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
 
 
-    # Plot Map of the network infrstructure
-    Pjotr.plot_network(name_topology)
+    ##      3) Plot Map of the network infrstructure
+    # Pjotr.plot_network(name_topology)
+
+    ##      4) Plot total risk for every storm
+    Pjotr.plot_total_risk(fpath_risk,name_topology)
+
 
     ## Show or save
     save = True
