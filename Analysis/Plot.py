@@ -78,7 +78,7 @@ class Plotter():
             data = data.rename(columns={toler_index:"Risk"})
 
         elif type.lower() == "oad":
-            print(f"Loading OAD results in {fpath_risk}")
+            # print(f"Loading OAD results in {fpath_risk}")
             data = Plotter.load_topology_geodata(name_topology)
             LCC = pd.read_csv(fpath_risk,delimiter="\t",index_col=0,names=["LCC"]).squeeze()
             data["Risk"] = 1 - LCC
@@ -136,7 +136,7 @@ class Plotter():
         return map
 
     @staticmethod
-    def export_map(map,bounds,width=1500, height=844,filename="test",outdir="./",delay=2.0):
+    def export_map(map,bounds,width=2500, height=1800,filename="./test",delay=5.0):
         """ Save map as png using Selenium """
         options = Options()
         options.add_argument('-headless')
@@ -154,11 +154,27 @@ class Plotter():
         browser.minimize_window()
         browser.set_window_size(width, height)
         browser.get(urlfn)
-
+        png = browser.get_screenshot_as_png()
         #Give the map tiles some time to load
         time.sleep(delay)
-        browser.save_screenshot(outdir+filename+'.png')
+        # browser.save_screenshot(filename+'.png')
         browser.quit()
+
+        # Crop image 
+        from PIL import Image
+        from io import BytesIO
+        im = Image.open(BytesIO(png)) # uses PIL library to open image in memory
+        width, height = im.size
+
+        x     = 0.2
+        left  = x*width
+        upper = x*height
+        right = (1-x)*width
+        lower = (1-x)*height
+        # box = (250, 250, 750, 750) # left, upper, right, and lower
+        box   = (left,upper,right,lower)
+        im = im.crop(box) # defines crop points
+        im.save(f'{filename}.png')
 
 
     ##################################
@@ -281,15 +297,15 @@ class Plotter():
     ## Risk map plot (leaflet)
 
     def plot_leaflet(self,fpath_risk,name_topology,evname= "EARL",type="oad"):
-
+        print(f"Plotting {evname}...")
         fig, axes = plt.subplots(figsize=(3,3))
         width, height  = (2000,1500)   # Pixels
         bounds         = ([16.4, -95.00],[55.5, -87.00])   # (south_west, north_east)     
 
         crs =  "EPSG3857"   # coordinate reference systems   EPSG3857 (default)  EPSG4326
         # Create map
-        map = folium.Map(tiles="cartodbpositron",location=[39.50, -98.35], 
-                         zoom_start=4, zoom_control=False, crs=crs)
+        map = folium.Map(tiles="cartodbpositron",location=[35.50, -98.35], # [39.50, -98.35]
+                         zoom_start=4.5, zoom_control=False, crs=crs)
 
         state_geo = f"../Data/Processed/Topologies/{name_topology}/{name_topology}-counties.geojson"
 
@@ -308,8 +324,20 @@ class Plotter():
         ).add_to(map)
 
         map = Plotter.add_storm_to_map(map,evname,name_topology)
-        
-        map.save(evname+'.html')
+
+        from folium.features import DivIcon
+        folium.map.Marker(
+            [20.00, -122.00],
+            icon=DivIcon(
+                icon_size=(1000,200),
+                icon_anchor=(0,0),
+                html=f'<div style="font-size: 30pt">{evname}</div>',
+                )
+            ).add_to(map)
+
+        Plotter.export_map(map,bounds,filename=f"./Figures/{evname}")
+
+        # map.save(evname+'.html')
 
 
 
@@ -433,7 +461,7 @@ if __name__ == "__main__":
     Pjotr = Plotter()
     
     name_topology = "america"
-    evname = "mock1" # EARL MATTHEW KARL GONZALO mock2
+    evname = "EARL" # EARL MATTHEW KARL GONZALO mock2
     r0 = 10
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
@@ -441,7 +469,9 @@ if __name__ == "__main__":
     ##      1) Leaflet map
     # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
-    # [Pjotr.plot_leaflet(fpath_risk,name_topology,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
+
+    list_event = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
+    [Pjotr.plot_leaflet(fpath_risk,name_topology,name) for name in list_event]
 
 
     ##      2) Parametric plot
@@ -452,7 +482,7 @@ if __name__ == "__main__":
     # Pjotr.plot_network(name_topology)
 
     ##      4) Plot total risk for every storm
-    Pjotr.plot_total_risk(fpath_risk,name_topology)
+    # Pjotr.plot_total_risk(fpath_risk,name_topology)
 
 
     ## Show or save
