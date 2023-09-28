@@ -111,8 +111,8 @@ class Plotter():
                     "../Data/Processed/Topologies/europe/europe.nodelist"
         
         elif name_topology=="airports":
-            return "../Data/Processed/Topologies/airports/airports_world.edgelist",\
-                    None  # To do
+            return "../Data/Processed/Topologies/airports/airports.edgelist",\
+                   "../Data/Processed/Topologies/airports/airports.nodelist"
         
         else:
             print("Topology not recognized \n EXIT")
@@ -362,6 +362,7 @@ class Plotter():
                 (data_nodes.loc[edge.node1].lat,data_nodes.loc[edge.node1].lon),
                 (data_nodes.loc[edge.node2].lat,data_nodes.loc[edge.node2].lon),
                 ),
+                weight=3,  # default 3, use 0.75 for airports
                 color = "#636363"
                 ).add_to(map)    
                 ,axis=1)
@@ -408,7 +409,7 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    name_topology = "europe"
+    name_topology = "airports"
     evname = "mock1" # EARL MATTHEW KARL GONZALO mock2
     r0 = 8
     r1 = 0.3
