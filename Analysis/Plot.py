@@ -123,27 +123,29 @@ class Plotter():
     def add_storm_to_map(map,evname,name_topology):
 
         weight = 5
-        color  = "#FFFF00"
+        color  = "#a50f15"
 
         # Load data of the storm
         data_storm     = Plotter.load_data_storm(evname,name_topology)
         pos_storm = [(lat,lon) for lon,lat in  zip(data_storm["Longitude"], data_storm["Latitude"])]
+        
+        # Add trajectory
         folium.PolyLine(locations=pos_storm, color=color,weight=weight).add_to(map)
+
         for lat,lon,pdm in zip(data_storm["Latitude"],data_storm["Longitude"],data_storm["PDM"]):
             folium.vector_layers.CircleMarker(location=(lat,lon),radius=pdm/10,
-                                            fill=True,fillcolor=color).add_to(map)
+                                            fill=True,fillcolor=color,color=color).add_to(map)
 
         return map
 
     @staticmethod
-    def export_map(map,bounds,width=2500, height=1800,filename="./test",delay=5.0):
+    def export_map(map,width=2500, height=1800,filename="./test",delay=3.0):
         """ Save map as png using Selenium """
         options = Options()
         options.add_argument('-headless')
         
-        sw, ne = bounds
 
-        map.fit_bounds([sw, ne])
+        ## Save html map
         map.save(filename+'.html')
 
         
@@ -154,9 +156,10 @@ class Plotter():
         browser.minimize_window()
         browser.set_window_size(width, height)
         browser.get(urlfn)
+        time.sleep(delay)
         png = browser.get_screenshot_as_png()
         #Give the map tiles some time to load
-        time.sleep(delay)
+        
         # browser.save_screenshot(filename+'.png')
         browser.quit()
 
@@ -302,9 +305,12 @@ class Plotter():
         width, height  = (2000,1500)   # Pixels
         bounds         = ([16.4, -95.00],[55.5, -87.00])   # (south_west, north_east)     
 
+        tiles = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png"
+        attr  = "<a href=http://www.openstreetmap.org/copyright>OpenStreetMap</a>"
+
         crs =  "EPSG3857"   # coordinate reference systems   EPSG3857 (default)  EPSG4326
         # Create map
-        map = folium.Map(tiles="cartodbpositron",location=[35.50, -98.35], # [39.50, -98.35]
+        map = folium.Map(tiles=tiles,attr=attr,location=[35.50, -95.35], # [39.50, -98.35]
                          zoom_start=4.5, zoom_control=False, crs=crs)
 
         state_geo = f"../Data/Processed/Topologies/{name_topology}/{name_topology}-counties.geojson"
@@ -327,15 +333,15 @@ class Plotter():
 
         from folium.features import DivIcon
         folium.map.Marker(
-            [20.00, -122.00],
+            [22.00, -125.00],
             icon=DivIcon(
                 icon_size=(1000,200),
                 icon_anchor=(0,0),
-                html=f'<div style="font-size: 30pt">{evname}</div>',
+                html=f'<div style="font-size:70pt">{evname}</div>',
                 )
             ).add_to(map)
 
-        Plotter.export_map(map,bounds,filename=f"./Figures/{evname}")
+        Plotter.export_map(map,filename=f"./Figures/{evname}")
 
         # map.save(evname+'.html')
 
@@ -394,7 +400,8 @@ class Plotter():
 
     def plot_network(self,name_topology):
         "Plot the networks"
-        # import networkx as nx
+        tiles = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png"
+        attr  = "<a href=http://www.openstreetmap.org/copyright>OpenStreetMap</a>"
 
         path_edgelist, path_nodelist = Plotter.load_path_topology(name_topology)
         # G = nx.read_edgelist(path_edgelist)
@@ -405,7 +412,7 @@ class Plotter():
 
         crs =  "EPSG3857"   # coordinate reference systems   EPSG3857 (default)  EPSG4326
         # Create map
-        map = folium.Map(tiles="cartodbpositron",location=[39.50, -98.35], 
+        map = folium.Map(tiles=tiles, attr = attr,location=[39.50, -98.35], 
                          zoom_start=4.5, zoom_control=False, crs=crs)
 
 
