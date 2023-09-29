@@ -78,7 +78,7 @@ class Plotter():
             data = data.rename(columns={toler_index:"Risk"})
 
         elif type.lower() == "oad":
-            print(f"Loading OAD results in {fpath_risk}")
+            # print(f"Loading OAD results in {fpath_risk}")
             data = Plotter.load_topology_geodata(name_topology)
             LCC = pd.read_csv(fpath_risk,delimiter="\t",index_col=0,names=["LCC"]).squeeze()
             data["Risk"] = 1 - LCC
@@ -136,7 +136,7 @@ class Plotter():
         return map
 
     @staticmethod
-    def export_map(map,bounds,width=1500, height=844,filename="test",outdir="./",delay=2.0):
+    def export_map(map,bounds,width=2500, height=1800,filename="./test",delay=5.0):
         """ Save map as png using Selenium """
         options = Options()
         options.add_argument('-headless')
@@ -154,11 +154,27 @@ class Plotter():
         browser.minimize_window()
         browser.set_window_size(width, height)
         browser.get(urlfn)
-
+        png = browser.get_screenshot_as_png()
         #Give the map tiles some time to load
         time.sleep(delay)
-        browser.save_screenshot(outdir+filename+'.png')
+        # browser.save_screenshot(filename+'.png')
         browser.quit()
+
+        # Crop image 
+        from PIL import Image
+        from io import BytesIO
+        im = Image.open(BytesIO(png)) # uses PIL library to open image in memory
+        width, height = im.size
+
+        x     = 0.2
+        left  = x*width
+        upper = x*height
+        right = (1-x)*width
+        lower = (1-x)*height
+        # box = (250, 250, 750, 750) # left, upper, right, and lower
+        box   = (left,upper,right,lower)
+        im = im.crop(box) # defines crop points
+        im.save(f'{filename}.png')
 
 
     ##################################
@@ -281,15 +297,15 @@ class Plotter():
     ## Risk map plot (leaflet)
 
     def plot_leaflet(self,fpath_risk,name_topology,evname= "EARL",type="oad"):
-
+        print(f"Plotting {evname}...")
         fig, axes = plt.subplots(figsize=(3,3))
         width, height  = (2000,1500)   # Pixels
         bounds         = ([16.4, -95.00],[55.5, -87.00])   # (south_west, north_east)     
 
         crs =  "EPSG3857"   # coordinate reference systems   EPSG3857 (default)  EPSG4326
         # Create map
-        map = folium.Map(tiles="cartodbpositron",location=[39.50, -98.35], 
-                         zoom_start=4, zoom_control=False, crs=crs)
+        map = folium.Map(tiles="cartodbpositron",location=[35.50, -98.35], # [39.50, -98.35]
+                         zoom_start=4.5, zoom_control=False, crs=crs)
 
         state_geo = f"../Data/Processed/Topologies/{name_topology}/{name_topology}-counties.geojson"
 
@@ -308,8 +324,20 @@ class Plotter():
         ).add_to(map)
 
         map = Plotter.add_storm_to_map(map,evname,name_topology)
-        
-        map.save(evname+'.html')
+
+        from folium.features import DivIcon
+        folium.map.Marker(
+            [20.00, -122.00],
+            icon=DivIcon(
+                icon_size=(1000,200),
+                icon_anchor=(0,0),
+                html=f'<div style="font-size: 30pt">{evname}</div>',
+                )
+            ).add_to(map)
+
+        Plotter.export_map(map,bounds,filename=f"./Figures/{evname}")
+
+        # map.save(evname+'.html')
 
 
 
@@ -336,6 +364,30 @@ class Plotter():
             return '#ffffff' #'#ffffff'   #808080
         
 
+    ##########################################
+    ### Plot total risk
+
+    def plot_total_risk(self,fpath_risk,name_topology):
+        events = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
+        total_risk = pd.Series(index=events, dtype = float)
+
+        fig, ax = plt.subplots(figsize=(12,6))
+        size_ticksnumber = 15
+        size_axeslabel   = 32
+        for evname in events:
+            risk = Plotter.compute_risk_from_event(evname,name_topology,fpath_risk,type="oad")
+            total_risk.loc[evname] = risk.sum()
+            # total_risk.append()
+        
+        total_risk = total_risk.sort_values(ascending=False)
+
+        plt.bar(total_risk.index,total_risk)
+        plt.xticks(rotation = 60)
+        plt.tick_params(labelsize=size_ticksnumber)
+        ax.set_ylabel(r"$\overline{R}$", {'fontsize': size_axeslabel})
+        ax.set_xlabel(r"Storms", {'fontsize': size_axeslabel})
+        # Save
+        self.figdict[f'total_risk'] = fig 
 
     ##########################################    
     ### Plot network infrastructure as a map
@@ -409,28 +461,30 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    name_topology = "airports"
-    evname = "mock1" # EARL MATTHEW KARL GONZALO mock2
-    r0 = 8
+    name_topology = "america"
+    evname = "EARL" # EARL MATTHEW KARL GONZALO mock2
+    r0 = 10
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
 
-    ## Leaflet map
+    ##      1) Leaflet map
     # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
 
-    ## Riskmap plot
-    # Pjotr.plot_us_riskmap(fpath_risk,name_topology,evname)
-
-    # [Pjotr.plot_us_riskmap(fpath_risk,name_topology,name) for name in ["EARL","ARTHUR","IRENE","ISAAC"]]
+    list_event = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
+    [Pjotr.plot_leaflet(fpath_risk,name_topology,name) for name in list_event]
 
 
-    # Parametric plot
+    ##      2) Parametric plot
     # Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
 
 
-    # Plot Map of the network infrstructure
-    Pjotr.plot_network(name_topology)
+    ##      3) Plot Map of the network infrstructure
+    # Pjotr.plot_network(name_topology)
+
+    ##      4) Plot total risk for every storm
+    # Pjotr.plot_total_risk(fpath_risk,name_topology)
+
 
     ## Show or save
     save = True
