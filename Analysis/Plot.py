@@ -49,7 +49,7 @@ class Plotter():
         Return the probability of a physical damage
         at distance (dist) and with wind (force)
         """
-        if dist > 1800:
+        if dist > 1300:
             return 0
         else:
             return  const*((force/65)**(8.02))/(dist+dist0)**2
@@ -128,7 +128,7 @@ class Plotter():
         # Load data of the storm
         data_storm     = Plotter.load_data_storm(evname,name_topology)
         pos_storm = [(lat,lon) for lon,lat in  zip(data_storm["Longitude"], data_storm["Latitude"])]
-        
+
         # Add trajectory
         folium.PolyLine(locations=pos_storm, color=color,weight=weight).add_to(map)
 
@@ -317,6 +317,9 @@ class Plotter():
 
         risk = Plotter.compute_risk_from_event(evname,name_topology,fpath_risk,type)
 
+        # Compute fraction ad risk
+        Plotter.compute_fraction_at_risk(risk,name_topology)
+
         folium.GeoJson(
             state_geo,
             style_function = lambda feature: {
@@ -343,9 +346,30 @@ class Plotter():
 
         Plotter.export_map(map,filename=f"./Figures/{evname}")
 
-        # map.save(evname+'.html')
+        # Close map
+        plt.close()
 
 
+
+    def compute_fraction_at_risk(risk,name_topology):
+        '''
+            Return the fraction of the nodes inside region
+            with risk at least very low and high
+                [TO DO: Refactor this function]
+        '''
+        data = Plotter.load_topology_geodata(name_topology)
+        C = data.groupby("geoid")["lat"].count()
+        D = risk.index.to_series().apply( lambda item: C[str(item)])
+        df=pd.concat([risk,D],axis=1).dropna()
+        bounds = np.logspace(-6,0,6)
+        df_filt1 = df[df> bounds[0]].dropna()
+        df_filt2 = df[df> bounds[3]].dropna()
+        f1 = df_filt1['geoid'].sum()/len(data)
+        f2 = df_filt2['geoid'].sum()/len(data)
+        print(f"Fraction of nodes with risk at least very low: {f1}\n")
+        print(f"Fraction of nodes with risk at least high: {f2}\n")
+
+        return f1,f2
 
 
     def my_color_function(feature,risk):
@@ -377,21 +401,23 @@ class Plotter():
         events = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
         total_risk = pd.Series(index=events, dtype = float)
 
-        fig, ax = plt.subplots(figsize=(12,6))
-        size_ticksnumber = 15
-        size_axeslabel   = 32
+        fig, ax = plt.subplots(figsize=(10,12))
         for evname in events:
             risk = Plotter.compute_risk_from_event(evname,name_topology,fpath_risk,type="oad")
             total_risk.loc[evname] = risk.sum()
-            # total_risk.append()
-        
-        total_risk = total_risk.sort_values(ascending=False)
 
-        plt.bar(total_risk.index,total_risk)
-        plt.xticks(rotation = 60)
-        plt.tick_params(labelsize=size_ticksnumber)
-        ax.set_ylabel(r"$\overline{R}$", {'fontsize': size_axeslabel})
-        ax.set_xlabel(r"Storms", {'fontsize': size_axeslabel})
+        # Risk of the European mock events
+        total_risk["MEDICANE 1"] = 3.06
+        total_risk["MEDICANE 2"] = 6.28
+        
+        total_risk = total_risk.sort_values(ascending=True)
+        total_risk = total_risk[-12:]
+
+        plt.barh(total_risk.index,total_risk,color = "#7570b3")
+        plt.xticks(rotation = 0,fontsize=30)
+        plt.yticks(fontsize=20)
+        ax.set_xlabel(r"$R$", {'fontsize': 52})
+        ax.set_ylabel(r"Storms", {'fontsize': 40})
         # Save
         self.figdict[f'total_risk'] = fig 
 
@@ -469,17 +495,17 @@ if __name__ == "__main__":
     Pjotr = Plotter()
     
     name_topology = "america"
-    evname = "EARL" # EARL MATTHEW KARL GONZALO mock2
+    evname = "MATTHEW" # EARL MATTHEW KARL GONZALO mock2
     r0 = 10
     r1 = 0.3
     fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
 
     ##      1) Leaflet map
-    # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
+    Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
 
-    list_event = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
-    [Pjotr.plot_leaflet(fpath_risk,name_topology,name) for name in list_event]
+    # list_event = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
+    # [Pjotr.plot_leaflet(fpath_risk,name_topology,name) for name in list_event]
 
 
     ##      2) Parametric plot
