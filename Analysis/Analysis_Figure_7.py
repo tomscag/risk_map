@@ -44,8 +44,12 @@ def load_topology(fname,NUM_NODES):
             NUM_NODES = 1467
             return edgelist, NUM_NODES
     elif fname=="airports":
-        _fpath = "../Data/Processed/Topologies/airports/airports_world.edgelist"
-        return nx.read_edgelist(_fpath,nodetype=int), NUM_NODES
+        _fpath = "../Data/Processed/Topologies/airports/airports.edgelist"
+        if NUM_NODES < 3182:
+            return sample_graph_configuration_model(edgelist,NUM_NODES), NUM_NODES
+        else:
+            NUM_NODES = 3182
+            return nx.read_edgelist(_fpath,nodetype=int), NUM_NODES
     else:
         print("Topology not recognized \n EXIT")
         return
@@ -90,7 +94,7 @@ def analyze(r0,r1_list,filepath_output):
         with open(FNAME_OUTPUT,"a+") as file:
             # file.write(str(r1) + "\t" + str(O) + "\n")
             file.write(f"{r1:.6f}"+"\t"+f"{O:.6f}"+"\n") 
-        if O < 1e-5: # 
+        if O < 1e-3: # 
             break   
 
 
@@ -98,13 +102,13 @@ def analyze(r0,r1_list,filepath_output):
 #########################################################
 #########################################################
 
-name_topology   = "europe" # america europe airports random
+name_topology   = "airports" # america europe airports random
 
 
 NUM_NODES    = 5000   # 1000
-NUM_SAMPLES  = 75     # 100
+NUM_SAMPLES  = 150     # 100
 MAX_TSTEP    = 2000   # 1000
-dynp_pINI    = 0.05   # Fraction of disrupted nodes on the network as initial condition
+dynp_pINI    = 0.0005 # Fraction of disrupted nodes on the network as initial condition (default 0.05)
 
 G, NUM_NODES = load_topology(name_topology,NUM_NODES)
 
@@ -118,20 +122,10 @@ else:
 
 
 
-r0_list = np.linspace(0,2,50)
+r0_list = np.linspace(0,0.3,50)
 r1_list = np.linspace(0,1.1*(1/dynp_pINI),50)
+r1_list = np.linspace(0,4,50)
 
-## wip- non equal binning
-
-
-# np.logspace(0,1/(1-dynp_pINI),base=25,dtype=float)
-# # np.interp
-# r0_arr = []
-
-# r1_crit = 1
-# r0_crit = 1/(1-dynp_pINI) - r1_crit/dynp_pINI
-# A = np.linspace(0,r0_crit,25)
-# np.concatenate([A, np.logspace(np.log10(r0_crit),np.log10(2),num=25,base=10,dtype=float)])
 
 
 def apply_async_with_callback():

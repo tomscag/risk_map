@@ -26,7 +26,7 @@ def load_topology(fname):
         return nx.read_edgelist(_fpath,nodetype=int)    
 
     elif fname=="airports":
-        _fpath = "../Data/Processed/airports/airports_world.edgelist"
+        _fpath = "../Data/Processed/Topologies/airports/airports.edgelist"
         return nx.read_edgelist(_fpath,nodetype=int)
     else:
         print("Topology not recognized \n EXIT")
@@ -49,7 +49,7 @@ def write_results(foutname,O,node):
 NUM_SAMPLES  = 10     # 100
 MAX_TSTEP    = 2000   # 1000
 
-name_topology   = "europe" # america europe airports random
+name_topology   = "airports" # america europe airports random
 
 
 # if not os.path.exists(foutname):
@@ -64,8 +64,8 @@ G = load_topology(name_topology)
 NUM_NODES = len(G.nodes())
 
 
-r0    = 8
-r1    = 0.3
+r0    = 0.05
+r1    = 1
 foutname = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}.dat"
 if os.path.exists(foutname):
     print("Existing file")

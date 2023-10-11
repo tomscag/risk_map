@@ -40,7 +40,6 @@ class Plotter():
         self.figdict = {}   # For saving
 
 
-
     # static methods for risk map
 
     @staticmethod
@@ -99,20 +98,30 @@ class Plotter():
         return data_storm
     
     @staticmethod
-    def load_path_topology(name_topology):
+    def load_topology_parameters(name_topology):
         '''
+            OUTPUT
+                path_edgelist
+                path_nodelist
+                path_risk
         '''
         if name_topology=="america":
+            r0,r1 = (10,0.3)
             return  "../Data/Processed/Topologies/america/powergrid_north_america.el", \
-                    "../Data/Processed/Topologies/america/america.nodelist"
+                    "../Data/Processed/Topologies/america/america.nodelist", \
+                    f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
 
         elif name_topology=="europe":
+            r0,r1 = (8,0.3)
             return "../Data/Processed/Topologies/europe/powergrid_europe.el", \
-                    "../Data/Processed/Topologies/europe/europe.nodelist"
+                    "../Data/Processed/Topologies/europe/europe.nodelist", \
+                    f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
         
         elif name_topology=="airports":
+            r0,r1 = (1,1)
             return "../Data/Processed/Topologies/airports/airports.edgelist",\
-                   "../Data/Processed/Topologies/airports/airports.nodelist"
+                   "../Data/Processed/Topologies/airports/airports.nodelist",\
+                   f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
         
         else:
             print("Topology not recognized \n EXIT")
@@ -233,7 +242,7 @@ class Plotter():
         plt.plot([1.0/(1-dynp_pINI),0.0],[0.0,1/(dynp_pINI*(1-dynp_pINI))], color='#dd181f', linewidth=1.5)
 
 
-        interpolation = "bilinear" # none bilinear bicubic hanning
+        interpolation = "none" # none bilinear bicubic hanning
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
                     origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
 
@@ -429,7 +438,7 @@ class Plotter():
         tiles = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png"
         attr  = "<a href=http://www.openstreetmap.org/copyright>OpenStreetMap</a>"
 
-        path_edgelist, path_nodelist = Plotter.load_path_topology(name_topology)
+        path_edgelist, path_nodelist = Plotter.load_topology_parameters(name_topology)
         # G = nx.read_edgelist(path_edgelist)
         # G = G.subgraph([str(item) for item in df_PowerGrid.index])
         data_nodes = pd.read_csv(path_nodelist,sep=" ",index_col=0, usecols=[0,1,2],names=["label","lon","lat"])
@@ -494,14 +503,13 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    name_topology = "america"
-    evname = "MATTHEW" # EARL MATTHEW KARL GONZALO mock2
-    r0 = 10
-    r1 = 0.3
-    fpath_risk = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
+    name_topology = "airports"
+    evname = "mock1" # EARL MATTHEW KARL GONZALO mock2
+
+    _,_, fpath_risk = Pjotr.load_topology_parameters(name_topology)
 
     ##      1) Leaflet map
-    Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
+    # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
 
     # list_event = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
@@ -509,7 +517,7 @@ if __name__ == "__main__":
 
 
     ##      2) Parametric plot
-    # Pjotr.plot_heatmap2d(name_topology="europe",NUM_NODES=1467,NUM_SAMPLES=75,MAX_TSTEP=2000)
+    Pjotr.plot_heatmap2d(name_topology="airports",NUM_NODES=3182,NUM_SAMPLES=100,MAX_TSTEP=2000)
 
 
     ##      3) Plot Map of the network infrstructure
