@@ -517,7 +517,7 @@ if __name__ == "__main__":
 
 
     ##      2) Parametric plot
-    Pjotr.plot_heatmap2d(name_topology="airports",NUM_NODES=3182,NUM_SAMPLES=100,MAX_TSTEP=2000)
+    Pjotr.plot_heatmap2d(name_topology="airports",NUM_NODES=3182,NUM_SAMPLES=150,MAX_TSTEP=2000)
 
 
     ##      3) Plot Map of the network infrstructure

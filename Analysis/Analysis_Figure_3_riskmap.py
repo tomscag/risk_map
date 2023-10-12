@@ -64,8 +64,8 @@ G = load_topology(name_topology)
 NUM_NODES = len(G.nodes())
 
 
-r0    = 0.05
-r1    = 1
+r0    = 0.3
+r1    = 2
 foutname = f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_{NUM_SAMPLES}_maxtime_{MAX_TSTEP}.dat"
 if os.path.exists(foutname):
     print("Existing file")
