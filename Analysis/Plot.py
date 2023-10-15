@@ -54,9 +54,20 @@ class Plotter():
             return  const*((force/65)**(8.02))/(dist+dist0)**2
 
     @staticmethod
+    def fragility_model_earthquake(dist,magnitude,const=1.092e-12,dist0=10):
+        """ 
+        Return the probability of a physical damage
+        at distance (dist) and with magnitude
+        """
+        if dist > 1300:
+            return 0
+        else:
+            return  const*(10**(1.5*(magnitude-1) )  )/(dist+dist0)**2
+
+    @staticmethod
     def load_topology_geodata(name_topology):
         fpath = f"../Data/Processed/Topologies/{name_topology}/{name_topology}.nodelist"
-        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat","geoid"],usecols=[0,1,2,3])
+        return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat","geoid"],usecols=[0,1,2,3],dtype={"geoid":"string"})
 
     @staticmethod  
     def damage_if_nodes_fail(fpath_risk,type="oad"):
@@ -85,17 +96,48 @@ class Plotter():
         return data
 
 
+    def compute_fraction_at_risk(risk,name_topology):
+        '''
+            Return the fraction of the nodes inside region
+            with risk at least very low and high
+                [TO DO: Refactor this function]
+        '''
+        data = Plotter.load_topology_geodata(name_topology)
+        C = data.groupby("geoid")["lat"].count()
+        D = risk.index.to_series().apply( lambda item: C[str(item)])
+        df=pd.concat([risk,D],axis=1).dropna()
+        bounds = np.logspace(-6,0,6)
+        df_filt1 = df[df> bounds[0]].dropna()
+        df_filt2 = df[df> bounds[3]].dropna()
+        f1 = df_filt1['geoid'].sum()/len(data)
+        f2 = df_filt2['geoid'].sum()/len(data)
+        print(f"Fraction of nodes with risk at least very low: {f1}\n")
+        print(f"Fraction of nodes with risk at least high: {f2}\n")
+
+        return f1,f2
+
+
     @staticmethod
-    def load_data_storm(name_storm,name_topology):
+    def load_data_stressor(name_storm,name_topology):
 
-        _dir  = f'../Data/Processed/Storms/{name_topology}/storm_'
 
-        data_storm = pd.read_csv(
-                    _dir+name_storm+'.csv', delimiter=' ',
-                    names=["Latitude", "Longitude", "wmo_wind.x", "PDM"],
-                    header=0,dtype=float)        
+        if name_topology == "america" or name_topology == "europe":
+            _dir  = f'../Data/Processed/Storms/{name_topology}/storm_'
 
-        return data_storm
+            data_storm = pd.read_csv(
+                        _dir+name_storm+'.csv', delimiter=' ',
+                        names=["Latitude", "Longitude", "wmo_wind.x", "PDM"],
+                        header=0,dtype=float)        
+
+            return data_storm
+        elif name_topology == "airports":
+            _dir  = f'../Data/Processed/Earthquakes/earthquakes_World_2000-2023_M7.csv'
+            data_quakes = pd.read_csv(
+                        _dir, delimiter=',', usecols=[1,2,3,4],
+                        names=["Latitude", "Longitude", "depth", "magnitude"],
+                        header=0,dtype=float) 
+            return data_quakes
+
     
     @staticmethod
     def load_topology_parameters(name_topology):
@@ -118,7 +160,7 @@ class Plotter():
                     f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
         
         elif name_topology=="airports":
-            r0,r1 = (1,1)
+            r0,r1 = (0.3,2)
             return "../Data/Processed/Topologies/airports/airports.edgelist",\
                    "../Data/Processed/Topologies/airports/airports.nodelist",\
                    f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
@@ -135,7 +177,7 @@ class Plotter():
         color  = "#a50f15"
 
         # Load data of the storm
-        data_storm     = Plotter.load_data_storm(evname,name_topology)
+        data_storm     = Plotter.load_data_stressor(evname,name_topology)
         pos_storm = [(lat,lon) for lon,lat in  zip(data_storm["Longitude"], data_storm["Latitude"])]
 
         # Add trajectory
@@ -280,16 +322,25 @@ class Plotter():
         risk_intrinsic_nodes = Plotter.damage_if_nodes_fail(fpath_risk,type)
 
         # Load storm's data
-        data_storm     = Plotter.load_data_storm(evname,name_topology)
+        data_storm     = Plotter.load_data_stressor(evname,name_topology)
 
         risk_intrinsic_nodes["Prob"] = 0
-        for snapshot in data_storm.iterrows():
-            latlon_storm = (snapshot[1]['Latitude'], snapshot[1]['Longitude'])
-            # pdm_storm = snapshot[1]['PDM'] # Potential Damage Multiplier
-            wind_strength = snapshot[1]['wmo_wind.x'] # Wind strength
-            distances  = [haversine(latlon_storm,(Lat,Lon), unit=Unit.KILOMETERS) 
-                        for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
-            risk_intrinsic_nodes["Prob"] += [Plotter.fragility_model_storm(dist,wind_strength) for dist in distances]
+        if name_topology == "america" or name_topology == "europe":
+            for snapshot in data_storm.iterrows():
+                latlon_storm = (snapshot[1]['Latitude'], snapshot[1]['Longitude'])
+                # pdm_storm = snapshot[1]['PDM'] # Potential Damage Multiplier
+                wind_strength = snapshot[1]['wmo_wind.x'] # Wind strength
+                distances  = [haversine(latlon_storm,(Lat,Lon), unit=Unit.KILOMETERS) 
+                            for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
+                risk_intrinsic_nodes["Prob"] += [Plotter.fragility_model_storm(dist,wind_strength) for dist in distances]
+        elif name_topology == "airports":
+            for snapshot in data_storm.iterrows():
+                latlon_storm = (snapshot[1]['Latitude'], snapshot[1]['Longitude'])
+                magnitude = snapshot[1]['magnitude'] # Magnitude quake
+                distances  = [haversine(latlon_storm,(Lat,Lon), unit=Unit.KILOMETERS) 
+                            for Lat,Lon in zip(risk_intrinsic_nodes.lat,risk_intrinsic_nodes.lng)]
+                risk_intrinsic_nodes["Prob"] += [Plotter.fragility_model_earthquake(dist,magnitude) for dist in distances]
+
 
 
         
@@ -297,16 +348,19 @@ class Plotter():
         scalefact = 1e0
         risk_intrinsic_nodes["RiskTot"] = [A*B*scalefact for A,B in zip(risk_intrinsic_nodes["Prob"],risk_intrinsic_nodes["Risk"])]
 
-        norm_factor = 0.0006864062438303901  # To normalize risk to the strongest event
+        if name_topology == "america" or name_topology == "europe":
+            norm_factor = 0.0006864062438303901  # To normalize risk to the strongest event
+        elif name_topology == "airports":
+            norm_factor = 0.00001
         risk_aggregated = risk_intrinsic_nodes.groupby("geoid")["RiskTot"].sum()
-        risk_aggregated.drop("Other",inplace=True)
+        risk_aggregated.drop("Other",inplace=True,errors='ignore')
         risk_aggregated = risk_aggregated/norm_factor
 
         return risk_aggregated        
 
 
     #######################################
-    ## Risk map plot (leaflet)
+    ## Risk map plot (powergrids)
 
     def plot_leaflet(self,fpath_risk,name_topology,evname= "EARL",type="oad"):
         print(f"Plotting {evname}...")
@@ -343,6 +397,7 @@ class Plotter():
 
         map = Plotter.add_storm_to_map(map,evname,name_topology)
 
+        # Add name to the map
         from folium.features import DivIcon
         folium.map.Marker(
             [22.00, -125.00],
@@ -359,26 +414,64 @@ class Plotter():
         plt.close()
 
 
+    #######################################
+    ## Risk map plot (airports)
 
-    def compute_fraction_at_risk(risk,name_topology):
-        '''
-            Return the fraction of the nodes inside region
-            with risk at least very low and high
-                [TO DO: Refactor this function]
-        '''
-        data = Plotter.load_topology_geodata(name_topology)
-        C = data.groupby("geoid")["lat"].count()
-        D = risk.index.to_series().apply( lambda item: C[str(item)])
-        df=pd.concat([risk,D],axis=1).dropna()
-        bounds = np.logspace(-6,0,6)
-        df_filt1 = df[df> bounds[0]].dropna()
-        df_filt2 = df[df> bounds[3]].dropna()
-        f1 = df_filt1['geoid'].sum()/len(data)
-        f2 = df_filt2['geoid'].sum()/len(data)
-        print(f"Fraction of nodes with risk at least very low: {f1}\n")
-        print(f"Fraction of nodes with risk at least high: {f2}\n")
+    def plot_leaflet_airports(self,fpath_risk,name_topology,type="oad"):
+        print(f"Plotting airports map...")
 
-        return f1,f2
+        tiles = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png"
+        attr  = "<a href=http://www.openstreetmap.org/copyright>OpenStreetMap</a>"
+
+        crs =  "EPSG3857"   # coordinate reference systems   EPSG3857 (default)  EPSG4326
+        # Create map
+        map = folium.Map(tiles=tiles,attr=attr,location=[35.50, -95.35], # [39.50, -98.35]
+                         zoom_start=4.5, zoom_control=False, crs=crs)
+
+        state_geo = f"../Data/Processed/Topologies/{name_topology}/{name_topology}-world-grid.json"
+
+        risk = Plotter.compute_risk_from_event(evname,name_topology,fpath_risk,type)
+
+        # Compute fraction ad risk
+        # Plotter.compute_fraction_at_risk(risk,name_topology)
+
+
+        # Draw airports on the map
+        path_edgelist, path_nodelist,_ = Plotter.load_topology_parameters(name_topology)
+        data_nodes = pd.read_csv(path_nodelist,sep=" ",index_col=0, usecols=[0,1,2],names=["label","lon","lat"])
+        data_edges = pd.read_csv(path_edgelist,sep=" ",names=["node1","node2"])
+        data_nodes.apply(lambda point: folium.CircleMarker(location=[point.lat, point.lon],
+                        radius=0.70,color="#252525", opacity=0.75,
+                        weight=5
+                        ).add_to(map),axis=1)
+        
+
+        # Assign risk (color) to each cell
+        folium.GeoJson(
+            state_geo,
+            style_function = lambda feature: {
+                'fillColor': Plotter.my_color_function(feature,risk),
+                'color': '#080808',       # border color 
+                'weight': .75,            # Width border
+                'opacity':0.2,            # Border opacity
+                'fillOpacity':.35,        # Fill opacity
+            }
+        ).add_to(map)
+
+
+
+
+
+        Plotter.export_map(map,filename=f"./Figures/{evname}")
+
+        # Close map
+        plt.close()
+
+
+
+
+
+
 
 
     def my_color_function(feature,risk):
@@ -386,7 +479,7 @@ class Plotter():
         bounds = np.linspace(0,1,6)
         bounds = np.logspace(-6,0,6)
         try:
-            value = risk[feature['properties']['GEOID']]   # 
+            value = risk[feature['properties']['GEOID']]   # GEOID
             if  value >bounds[0] and value <= bounds[1]:
                 return '#2b83ba'   # blue
             elif value >= bounds[1] and value <= bounds[2]:
@@ -398,7 +491,7 @@ class Plotter():
             elif value > bounds[4]:
                 return '#d7191c'   # red
             else:
-                return '#ffffff' # blue 
+                return '#ffffff' # white 
         except:
             return '#ffffff' #'#ffffff'   #808080
         
@@ -470,7 +563,7 @@ class Plotter():
         if name_topology == "america":
             list_event  = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
             for event in list_event:
-                data_storm = Plotter.load_data_storm(event,name_topology)
+                data_storm = Plotter.load_data_stressor(event,name_topology)
                 data_storm.apply(lambda point: folium.CircleMarker(location=[point.Latitude, point.Longitude],
                     radius=0.05*point["wmo_wind.x"],color="#a50f15", opacity=0.75,
                     weight=5
@@ -508,8 +601,11 @@ if __name__ == "__main__":
 
     _,_, fpath_risk = Pjotr.load_topology_parameters(name_topology)
 
-    ##      1) Leaflet map
+    ##      1) Leaflet map powergrids
     # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
+
+    ##      1 bis) Leaflet map airports
+    Pjotr.plot_leaflet_airports(fpath_risk,name_topology)
 
 
     # list_event = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
@@ -517,7 +613,7 @@ if __name__ == "__main__":
 
 
     ##      2) Parametric plot
-    Pjotr.plot_heatmap2d(name_topology="airports",NUM_NODES=3182,NUM_SAMPLES=150,MAX_TSTEP=2000)
+    # Pjotr.plot_heatmap2d(name_topology="airports",NUM_NODES=3182,NUM_SAMPLES=150,MAX_TSTEP=2000)
 
 
     ##      3) Plot Map of the network infrstructure
