@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import networkx as nx
 import os
 
@@ -79,3 +80,85 @@ def make_dirs(filepath_output):
     else:
         print("Directory already present: delete it or change parameters")
         os._exit(0)
+
+
+
+        
+def load_data_stressor(event_name=None,name_topology="america"):
+
+
+    if name_topology == "america" or name_topology == "europe":
+        _dir  = f'../Data/Processed/Storms/{name_topology}/storm_'
+
+        data_storm = pd.read_csv(
+                    _dir+event_name+'.csv', delimiter=' ',
+                    names=["Latitude", "Longitude", "wmo_wind.x", "PDM"],
+                    header=0,dtype=float)        
+
+        return data_storm
+    elif name_topology == "airports":
+        _dir  = f'../Data/Processed/Earthquakes/earthquakes_World_2000-2023_M7.csv'
+        data_quakes = pd.read_csv(
+                    _dir, delimiter=',', usecols=[1,2,3,4],
+                    names=["Latitude", "Longitude", "depth", "magnitude"],
+                    header=0,dtype=float) 
+        return data_quakes
+
+
+
+def load_topology_parameters(name_topology):
+    '''
+        OUTPUT
+            path_edgelist
+            path_nodelist
+            path_risk
+    '''
+    if name_topology=="america":
+        r0,r1 = (10,0.3)
+        return  "../Data/Processed/Topologies/america/powergrid_north_america.el", \
+                "../Data/Processed/Topologies/america/america.nodelist", \
+                f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
+
+    elif name_topology=="europe":
+        r0,r1 = (8,0.3)
+        return "../Data/Processed/Topologies/europe/powergrid_europe.el", \
+                "../Data/Processed/Topologies/europe/europe.nodelist", \
+                f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
+    
+    elif name_topology=="airports":
+        r0,r1 = (0.3,2)
+        return "../Data/Processed/Topologies/airports/airports.edgelist",\
+                "../Data/Processed/Topologies/airports/airports.nodelist",\
+                f"./Output_OAD/{name_topology}_r0_{r0}_r1_{r1}_samples_10_maxtime_2000.dat"
+    
+    else:
+        print("Topology not recognized \n EXIT")
+        return
+    
+
+        
+def load_topology_geodata(name_topology):
+    fpath = f"../Data/Processed/Topologies/{name_topology}/{name_topology}.nodelist"
+    return pd.read_csv(fpath,delimiter=" ",index_col=0,names=["label","lng","lat","geoid"],usecols=[0,1,2,3],dtype={"geoid":"string"})
+
+
+
+def fragility_model_storm(dist,force,const=1.092e-3,dist0=10, K=1300):
+    """ 
+    Return the probability of a physical damage
+    at distance (dist) and with wind (force)
+    """
+    if dist > K:
+        return 0
+    else:
+        return  const*((force/65)**(8.02))/(dist+dist0)**2
+
+def fragility_model_earthquake(dist,magnitude,const=1.092e-12,dist0=10, K=1300):
+    """ 
+    Return the probability of a physical damage
+    at distance (dist) and with magnitude
+    """
+    if dist > K:
+        return 0
+    else:
+        return  const*(10**(1.5*(magnitude-1) )  )/(dist+dist0)**2
