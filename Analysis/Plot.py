@@ -500,26 +500,33 @@ class Plotter():
     ### Plot total risk
 
     def plot_total_risk(self,fpath_risk,name_topology):
+
+        plt.rc('font', size=30)  # Set font size for scientific notation
         events = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
         total_risk = pd.Series(index=events, dtype = float)
-
+        Na = 16167 # America power grid nodes
+        Ne = 13844 # Europe power grid nodes
         fig, ax = plt.subplots(figsize=(10,12))
         for evname in events:
             risk = Plotter.compute_risk_from_event(evname,name_topology,fpath_risk,type="oad")
-            total_risk.loc[evname] = risk.sum()
+            total_risk.loc[evname] = risk.sum()/Na
 
         # Risk of the European mock events
-        total_risk["MEDICANE 1"] = 3.06
-        total_risk["MEDICANE 2"] = 6.28
+        total_risk["MEDICANE 1"] = 3.06/Ne
+        total_risk["MEDICANE 2"] = 6.28/Ne
         
         total_risk = total_risk.sort_values(ascending=True)
         total_risk = total_risk[-12:]
 
-        plt.barh(total_risk.index,total_risk,color = "#7570b3")
-        plt.xticks(rotation = 0,fontsize=30)
+        plt.barh(total_risk.index,total_risk,facecolor = "#7570b3",alpha=0.75,edgecolor="#303030")
+        plt.xticks(rotation = 0,fontsize=35)
         plt.yticks(fontsize=20)
+        
         ax.set_xlabel(r"$R$", {'fontsize': 52})
-        ax.set_ylabel(r"Storms", {'fontsize': 40})
+        ax.set_ylabel(r"Hurricanes", {'fontsize': 40})
+        ax.ticklabel_format(axis='x',style='scientific',scilimits=[-3,6])
+
+
         # Save
         self.figdict[f'total_risk'] = fig 
 
@@ -596,16 +603,16 @@ if __name__ == "__main__":
 
     Pjotr = Plotter()
     
-    name_topology = "airports"
-    evname = "mock1" # EARL MATTHEW KARL GONZALO mock2
+    name_topology = "europe"   # america europe airports
+    evname = "ciaran" # EARL MATTHEW KARL GONZALO mock2 ciaran
 
     _,_, fpath_risk = Pjotr.load_topology_parameters(name_topology)
 
     ##      1) Leaflet map powergrids
-    # Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
+    Pjotr.plot_leaflet(fpath_risk,name_topology,evname)
 
     ##      1 bis) Leaflet map airports
-    Pjotr.plot_leaflet_airports(fpath_risk,name_topology)
+    # Pjotr.plot_leaflet_airports(fpath_risk,name_topology)
 
 
     # list_event = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
