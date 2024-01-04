@@ -5,7 +5,7 @@ import os
 
 
 
-def load_topology(name_topology,num_nodes):
+def load_topology(name_topology,num_nodes=None):
     '''
         if name_topology=="full"
             Return a fully connected graph
@@ -16,7 +16,7 @@ def load_topology(name_topology,num_nodes):
             Return a sampled graph from an existing topology
     '''
     if name_topology=="random":
-        return nx.fast_gnp_random_graph(num_nodes, 0.005, seed=None, directed=False)
+        return nx.fast_gnp_random_graph(num_nodes, p=0.005, seed=None, directed=False)
     elif name_topology=="full":
         return nx.complete_graph(num_nodes), num_nodes
     elif name_topology=="america":
@@ -30,10 +30,10 @@ def load_topology(name_topology,num_nodes):
     elif name_topology=="europe":
         _fpath   = "../Data/Processed/Topologies/europe/powergrid_europe.el"
         edgelist = nx.read_edgelist(_fpath,nodetype=int)    
-        if num_nodes < 1467: # If less than the number, sample with configuration model
+        if num_nodes < 13844: # If less than the number, sample with configuration model
             return sample_graph_configuration_model(edgelist,num_nodes), num_nodes
         else:
-            num_nodes = 1467
+            num_nodes = 13844
             return edgelist, num_nodes
     elif name_topology=="airports":
         _fpath = "../Data/Processed/Topologies/airports/airports.edgelist"
@@ -43,8 +43,8 @@ def load_topology(name_topology,num_nodes):
             num_nodes = 3182
             return nx.read_edgelist(_fpath,nodetype=int), num_nodes
     else:
-        print("Topology not recognized \n EXIT")
-        return
+        raise Exception("Topology not recognized \n EXIT")
+        
 
 
 def sample_graph_configuration_model(P,num_nodes):

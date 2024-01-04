@@ -4,11 +4,12 @@ import sys
 import numpy as np
 from math import log
 
-
-def gillespie(argv):
+def gillespie_optimized(argv):
 
     '''
     Simulate reaction-diffusion processes via Gillespie algorithm
+    Ref: "Optimized Gillespie algorithms for the simulation of 
+          Markovian epidemic processes on large and heterogeneous networks"
     
         INPUT
             nw
@@ -208,7 +209,7 @@ def gillespie(argv):
 
 
 
-def gillespie_fraction(argv):
+def gillespie_optimized_fraction(argv):
 
 
     '''
@@ -232,7 +233,7 @@ def gillespie_fraction(argv):
 
 
 
-    dynp_mu = 1         # healing rate default: 1
+    dynp_mu = 1        # healing rate default: 1
 
     # import networkx as nx
     net_N         = nw.number_of_nodes()
@@ -413,5 +414,5 @@ def gillespie_fraction(argv):
 RUN MAIN
 """
 if __name__== "__main__":
-    gillespie(sys.argv[1:])
+    gillespie_optimized(sys.argv[1:])
   
