@@ -519,6 +519,8 @@ class Plotter():
 
 
         FILEPATH    = f"/home/tomsc/gdrive/Projects/RiskMap/Analysis/Output_OAD/Simulation/{self.name_topology}_nodes_{self.num_nodes}_samples_{self.num_samples}_maxtime_{self.max_tstep}/"
+        if not os.exist(FILEPATH):
+            raise ValueError("Folder not found!!!")
         FILELIST    = glob.glob(FILEPATH+"*.dat")
 
 

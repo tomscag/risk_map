@@ -2,8 +2,8 @@ import networkx as nx
 import numpy as np
 
 # TO-DO
-# Obtain the same results in a controlled case using old and new code
-# Generalize to the modified model (alpha parameter)
+# Obtain the same results in a controlled case using old and new code [OK]
+# Generalize to the modified model (alpha parameter) [OK]
 # Launch the simulation in the cloud     
 
 
@@ -23,7 +23,7 @@ class SIR_Simulation():
         self.N = self.A.shape[0]
         self.lam = lam # Rate is prop to (1/N)
         self.gam = gam
-        self.alp = alp
+        self.alp = alp/self.N
 
         # Time-keeping.
         self.t = 0
@@ -46,11 +46,14 @@ class SIR_Simulation():
     def UpdatePropensityALL(self, n_nodes=None):
         self.IPL = (self.lam*self.A.dot(self.X==2))*(self.X==1)
         self.IPG =  self.gam*(self.X==2)
+        self.IPA =  self.alp*sum(self.X==2)*(self.A.dot(self.X==2))*(self.X==1)
         return None
 
     def UpdatePropensityFANCY(self,n_nodes):    # Use fancy indexing        
         self.IPL[n_nodes] = (self.lam*self.A[n_nodes].dot(self.X==2))*(self.X[n_nodes]==1)
         self.IPG =  self.gam*(self.X==2)
+        self.IPA =  self.alp*sum(self.X==2)*(self.A.dot(self.X==2))*(self.X==1)
+        # self.IPA =  self.alp*(sum(self.X==2)**2)*(self.X==1)
         return None
     
     def UpdatePropensityTAKE(self,n_nodes):   
@@ -79,8 +82,11 @@ class SIR_Simulation():
         r1 = np.random.rand()
         r2 = np.random.rand()
         
-        # 2. Calculate alpha.
-        cumsum = np.concatenate((self.IPL.cumsum(),self.IPL.cumsum()[-1]+self.IPG.cumsum()),dtype=float)
+        # 2. Calculate total propensity alpha.
+        cumsum = np.concatenate((self.IPL.cumsum(),
+                                 self.IPL.cumsum()[-1]+self.IPG.cumsum(),
+                                 self.IPL.cumsum()[-1]+self.IPG.cumsum()[-1]+self.IPA.cumsum()
+                                 ),dtype=float)
         self.alpha = cumsum[-1]
 
         # 3. Compute the time until the next reaction takes place.
@@ -102,6 +108,11 @@ class SIR_Simulation():
             self.R.append(self.R[-1]+1)
             self.I.append(self.I[-1]-1)
             self.S.append(self.S[-1])
+        elif (index//self.N == 2):  # Infection (field)
+            self.X[index%self.N] = 2
+            self.S.append(self.S[-1] - 1)
+            self.I.append(self.I[-1] + 1)
+            self.R.append(self.R[-1])            
         else:
             raise Exception("Node state to update is wrong")
             

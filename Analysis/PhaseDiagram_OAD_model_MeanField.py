@@ -2,7 +2,7 @@
 
 import numpy as np
 import networkx as nx
-from lib.gillespie import (gillespie, gillespie_fraction)
+from lib.gillespie import (gillespie_optimized, gillespie_optimized_fraction)
 from lib.misc import (load_topology, make_dirs)
 
 import multiprocessing as mp
@@ -24,7 +24,7 @@ def analyze_full(r0,r1_list,filepath_output):
 
     for r1 in r1_list:
         print(f"analyzing R0: {r0*NUM_NODES:2.3f}, R1: {r1*NUM_NODES:2.3f}")
-        O = gillespie_fraction([G,r0,r1,MAX_TSTEP,NUM_SAMPLES,dynp_pINI])
+        O = gillespie_optimized_fraction([G,r0,r1,MAX_TSTEP,NUM_SAMPLES,dynp_pINI])
         with open(FNAME_OUTPUT,"a+") as file:
             # file.write(str(r1) + "\t" + str(O) + "\n")
             file.write(f"{r1*NUM_NODES:.6f}"+"\t"+f"{O:.6f}"+"\n") 

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import os
+from lib.input import Inputs
 
 
 
@@ -15,33 +16,25 @@ def load_topology(name_topology,num_nodes=None):
         else
             Return a sampled graph from an existing topology
     '''
+    
     if name_topology=="random":
         return nx.fast_gnp_random_graph(num_nodes, p=0.005, seed=None, directed=False)
+    
     elif name_topology=="full":
-        return nx.complete_graph(num_nodes), num_nodes
+        return nx.complete_graph(num_nodes)
+    
     elif name_topology=="america":
-        _fpath   = "../Data/Processed/Topologies/america/powergrid_north_america.el"
-        edgelist = nx.read_edgelist(_fpath,nodetype=int)
-        if num_nodes < 16167:    # If less than the number, sample with configuration model
-            return sample_graph_configuration_model(edgelist,num_nodes), num_nodes
-        else:
-            num_nodes = 16167
-            return edgelist, num_nodes
+        inputs_dct = getattr(Inputs(), name_topology)
+        return nx.read_edgelist(inputs_dct['path_edgelist'],nodetype=int)
+
     elif name_topology=="europe":
-        _fpath   = "../Data/Processed/Topologies/europe/powergrid_europe.el"
-        edgelist = nx.read_edgelist(_fpath,nodetype=int)    
-        if num_nodes < 13844: # If less than the number, sample with configuration model
-            return sample_graph_configuration_model(edgelist,num_nodes), num_nodes
-        else:
-            num_nodes = 13844
-            return edgelist, num_nodes
+        inputs_dct = getattr(Inputs(), name_topology)
+        return nx.read_edgelist(inputs_dct['path_edgelist'],nodetype=int)
+
     elif name_topology=="airports":
-        _fpath = "../Data/Processed/Topologies/airports/airports.edgelist"
-        if num_nodes < 3182:
-            return sample_graph_configuration_model(edgelist,num_nodes), num_nodes
-        else:
-            num_nodes = 3182
-            return nx.read_edgelist(_fpath,nodetype=int), num_nodes
+        inputs_dct = getattr(Inputs(), name_topology)
+        return nx.read_edgelist(inputs_dct['path_edgelist'],nodetype=int)
+
     else:
         raise Exception("Topology not recognized \n EXIT")
         
@@ -75,12 +68,12 @@ def sample_graph_configuration_model(P,num_nodes):
 
 
 def make_dirs(filepath_output):
-    if not os.path.exists(filepath_output):
-        os.makedirs(filepath_output)
-    else:
-        print("Directory already present: delete it or change parameters")
-        os._exit(0)
 
+    while os.path.exists(filepath_output):
+        filepath_output += f"_{np.random.randint(0,1000)}/"
+        print("Directory already present: appending a random number to filename")
+    os.makedirs(filepath_output)
+    return filepath_output
 
 
         
@@ -107,6 +100,7 @@ def load_data_stressor(event_name=None,name_topology="america"):
 
 
 def load_topology_parameters(name_topology):
+    # DEPRECATED: use Inputs class instead
     '''
         OUTPUT
             path_edgelist
