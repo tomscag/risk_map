@@ -70,8 +70,9 @@ def sample_graph_configuration_model(P,num_nodes):
 def make_dirs(filepath_output):
 
     while os.path.exists(filepath_output):
-        filepath_output += f"_{np.random.randint(0,1000)}/"
+        filepath_output += f"_{np.random.randint(0,1000)}"
         print("Directory already present: appending a random number to filename")
+    filepath_output += "/"
     os.makedirs(filepath_output)
     return filepath_output
 
