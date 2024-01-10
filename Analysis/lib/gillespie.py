@@ -231,6 +231,7 @@ def gillespie_optimized_fraction(argv):
     num_sam    = argv[4]  # number of samples es: 10
     dynp_pINI  = argv[5]  #'Fraction of infected vertices on the network as initial condition (is random for each sample): ') es: 0.5
 
+    
 
 
     dynp_mu = 1        # healing rate default: 1
@@ -245,7 +246,7 @@ def gillespie_optimized_fraction(argv):
                                                 
     dyn_sig = { i : 0 for i in nw.nodes()}   # 0:operational, 1:affected, 2:disrupted
     
-
+    dynp_r0 = dynp_r0/net_N
 
 
     for sam in range(1,num_sam+1):

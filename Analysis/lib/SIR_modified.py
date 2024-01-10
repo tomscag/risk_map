@@ -21,7 +21,7 @@ class SIR_Simulation():
 
         # Model Parameters.
         self.N = self.A.shape[0]
-        self.lam = lam # Rate is prop to (1/N)
+        self.lam = lam/self.N # Rate is prop to (1/N)
         self.gam = gam
         self.alp = alp/self.N
 

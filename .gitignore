@@ -1,3 +1,8 @@
+# Ignore compiled files
+__pycache__/
+*.py[cod]
+
+
 Analysis/Output_OAD
 Analysis/Output_Motter
 Analysis/Functions/__pycache__

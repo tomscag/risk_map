@@ -24,7 +24,7 @@ class Inputs():
         # Europa power grid
         self.europe = dict()
         self.europe["num_nodes"]    = 13844
-        self.europe["num_samples"]  = 75
+        self.europe["num_samples"]  = 25
         self.europe["max_tstep"]    = 2000
         self.europe["init0"]       = 0.05
         self.europe["r0_list"]     = np.linspace(0,2,100)
