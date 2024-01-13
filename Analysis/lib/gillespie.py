@@ -247,6 +247,7 @@ def gillespie_optimized_fraction(argv):
     dyn_sig = { i : 0 for i in nw.nodes()}   # 0:operational, 1:affected, 2:disrupted
     
     dynp_r0 = dynp_r0/net_N
+    dynp_r1 = dynp_r1/(net_N**2)
 
 
     for sam in range(1,num_sam+1):
@@ -297,8 +298,10 @@ def gillespie_optimized_fraction(argv):
         
             # Calculate the total rate
             M = dynp_mu * dyn_NI 
-            L = dynp_r0 * dyn_NIk
-            A = dynp_r1 * (dyn_NI/net_N)*( dyn_NIk )   #  [TS] Rate due to the field interaction
+            L = dynp_r0 * dyn_NIk   # This include phantom process
+            A = (dynp_r1 * dyn_NI**2) * dyn_NS # This does not include phantom process (not needed)
+            # A = (dynp_r1 * dyn_NI) * (net_N-1) # net_N-1 to include phantom process  
+            # A = dynp_r1 * dyn_NI * dyn_NIk   # (dyn_NIk is wrong, should not depend on the topology!)
             dyn_R = M + L + A
 
 
@@ -366,25 +369,26 @@ def gillespie_optimized_fraction(argv):
 
             else:    # [TS] else, infect with the field mediating mechanism
 
-                # Select the infected vertex i with prob. proportional to k_i
-                while True:
-                    pos_inf = np.random.randint(0,dyn_NI)
-                    ver = dyn_VI[pos_inf]
-                    if np.random.uniform() < 1.0*nw.degree(ver) / (1.0*net_kmax):
-                        #print('nw.degree(ver) = ', str(nw.degree(ver)), ',*net_kmax=', str(net_kmax),  sep= ' ')
-                        break
+                # # Select the infected vertex i with prob. proportional to k_i
+                # while True:
+                #     pos_inf = np.random.randint(0,dyn_NI)
+                #     ver = dyn_VI[pos_inf]
+                #     if np.random.uniform() < 1.0*nw.degree(ver) / (1.0*net_kmax):
+                #         #print('nw.degree(ver) = ', str(nw.degree(ver)), ',*net_kmax=', str(net_kmax),  sep= ' ')
+                #         break
 
-                # [TS] In this case, we select uniformly from all susceptible nodes (virtual links) # neighbors_values = [x for x in dyn_VS if x is not None]
-                #  We select all to include phantom processes
+                # # [TS] In this case, we select uniformly from all susceptible nodes (virtual links) # neighbors_values = [x for x in dyn_VS if x is not None]
+                # #  We select all to include phantom processes
 
-                # CHOICE 1: We sample new infected from all the nodes (only susceptibles, excluding phantom)
-                #           This allows "teleportation" of infection towars other regions
-                neighbors_values = [x for x in ver_TOT if x != ver]
+                # # CHOICE 1: We sample new infected from all the nodes (only susceptibles, excluding phantom)
+                # #           This allows "teleportation" of infection towars other regions
+                # neighbors_values = [x for x in ver_TOT if x != ver]
 
-                # CHOICE 2: We sample only the neighbors of infected (standard SIR, just with an enhanced rate)
-                # neighbors_values = [n for n in nw.neighbors(ver)]
+                # # CHOICE 2: We sample only the neighbors of infected (standard SIR, just with an enhanced rate)
+                # # neighbors_values = [n for n in nw.neighbors(ver)]
 
-                ver = np.random.choice(neighbors_values)
+                # ver = np.random.choice(neighbors_values)
+                ver = np.random.choice([item for item in dyn_VS if item is not None])  # [ATTEMPT] here we don't need phantom
                 if dyn_sig[ver] == 0: # if not a phantom process, infect
                     dyn_sig[ver] = 1
                     #dyn_NSk -= nw.degree(ver)

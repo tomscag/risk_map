@@ -10,9 +10,9 @@ class Inputs():
         self.america = dict()
         self.america["num_nodes"]   = 16167
         self.america["num_samples"] = 50      # Phase Diagram
-        self.america["max_tstep"]   = 2000
+        self.america["max_tstep"]   = 5000
         self.america["init0"]       = 0.05
-        self.america["r0_list"]     = np.linspace(0,2,100)
+        self.america["r0_list"]     = np.linspace(0,150e3,100)
         self.america["r1_list"]     = np.linspace(0,1.1*(1/self.america["init0"] ),100)
         self.america["event"]       = "EARL"
         self.america["r0"] = 10     # Risk map
@@ -24,11 +24,11 @@ class Inputs():
         # Europa power grid
         self.europe = dict()
         self.europe["num_nodes"]    = 13844
-        self.europe["num_samples"]  = 25
-        self.europe["max_tstep"]    = 2000
+        self.europe["num_samples"]  = 50
+        self.europe["max_tstep"]    = 5000
         self.europe["init0"]       = 0.05
-        self.europe["r0_list"]     = np.linspace(0,2,100)
-        self.europe["r1_list"]     = np.linspace(0,1.1*(1/self.america["init0"] ),100)        
+        self.europe["r0_list"]     = np.linspace(0,150e3,100)
+        self.europe["r1_list"]     = np.linspace(0,1.1*(1/self.europe["init0"] ),100)        
         self.europe["event"]        = "ciaran"
         self.europe["r0"] = 8
         self.europe["r1"]= 0.3
@@ -40,10 +40,10 @@ class Inputs():
         self.airports = dict()
         self.airports["num_nodes"]  = 3182
         self.airports["num_samples"]= 50
-        self.airports["max_tstep"]  = 2000
+        self.airports["max_tstep"]  = 5000
         self.airports["init0"]       = 0.05
-        self.airports["r0_list"]     = np.linspace(0,0.1,100)
-        self.airports["r1_list"]     = np.linspace(0,3,100)        
+        self.airports["r0_list"]     = np.linspace(0,15e3,100)
+        self.airports["r1_list"]     = np.linspace(0,1.1*(1/self.airports["init0"] ),100)       
         self.airports["event"]      = "earthquakes"
         self.airports["r0"] = 0.3
         self.airports["r1"]= 2
@@ -55,7 +55,7 @@ class Inputs():
         self.random = dict()
         self.random["num_nodes"]  = 5000
         self.random["num_samples"]= 50
-        self.random["max_tstep"]  = 2000
+        self.random["max_tstep"]  = 5000
         self.random["prob_link"]  = 0.05
         self.random["init0"]      = 0.05
 
@@ -63,5 +63,5 @@ class Inputs():
         self.full = dict()
         self.full["num_nodes"]  = 5000
         self.full["num_samples"]= 50
-        self.full["max_tstep"]  = 2000
+        self.full["max_tstep"]  = 5000
         self.full["init0"]      = 0.05
