@@ -12,8 +12,8 @@ class Inputs():
         self.america["num_samples"] = 50      # Phase Diagram
         self.america["max_tstep"]   = 5000
         self.america["init0"]       = 0.05
-        self.america["r0_list"]     = np.linspace(0,150e3,100)
-        self.america["r1_list"]     = np.linspace(0,1.1*(1/self.america["init0"] ),100)
+        self.america["r0_list"]     = np.linspace(0,75e3,100)
+        self.america["r1_list"]     = np.linspace(0,25,100)  # 1.1*(1/self.europe["init0"] )
         self.america["event"]       = "EARL"
         self.america["r0"] = 10     # Risk map
         self.america["r1"]= 0.3
@@ -27,8 +27,8 @@ class Inputs():
         self.europe["num_samples"]  = 50
         self.europe["max_tstep"]    = 5000
         self.europe["init0"]       = 0.05
-        self.europe["r0_list"]     = np.linspace(0,150e3,100)
-        self.europe["r1_list"]     = np.linspace(0,1.1*(1/self.europe["init0"] ),100)        
+        self.europe["r0_list"]     = np.linspace(0,75e3,100)
+        self.europe["r1_list"]     = np.linspace(0,25,100)        
         self.europe["event"]        = "ciaran"
         self.europe["r0"] = 8
         self.europe["r1"]= 0.3
@@ -42,8 +42,8 @@ class Inputs():
         self.airports["num_samples"]= 50
         self.airports["max_tstep"]  = 5000
         self.airports["init0"]       = 0.05
-        self.airports["r0_list"]     = np.linspace(0,15e3,100)
-        self.airports["r1_list"]     = np.linspace(0,1.1*(1/self.airports["init0"] ),100)       
+        self.airports["r0_list"]     = np.linspace(0,3e3,100)
+        self.airports["r1_list"]     = np.linspace(0,25,100)       
         self.airports["event"]      = "earthquakes"
         self.airports["r0"] = 0.3
         self.airports["r1"]= 2

@@ -30,7 +30,7 @@ def analyze(r0,r1_list,filepath_output):
         with open(FNAME_OUTPUT,"a+") as file:
             # file.write(str(r1) + "\t" + str(O) + "\n")
             file.write(f"{r1:.6f}"+"\t"+f"{O:.6f}"+"\n") 
-        if O < 1e-3: # 
+        if O < 1e-2: # 
             break   
 
 
@@ -54,7 +54,7 @@ def apply_async_with_callback():
 
 if __name__ == '__main__':
 
-    name_topology = "europe" # america europe airports random
+    name_topology = "america" # america europe airports random
     inputs_dct = getattr(Inputs(), name_topology)
     NUM_NODES    = inputs_dct['num_nodes']   # 1000
     NUM_SAMPLES  = inputs_dct['num_samples'] # 100
