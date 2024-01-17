@@ -492,7 +492,9 @@ class Plotter():
         self.evname  = inputs_dct["event"]
         self.r0  = inputs_dct["r0"]
         self.r1  = inputs_dct["r1"]
-
+        self.r0_list  = inputs_dct["r0_list"]
+        self.r1_list  = inputs_dct["r1_list"]
+        self.init0    = inputs_dct["init0"]
         # Figure parameters (riskmap)
 
 
@@ -516,40 +518,30 @@ class Plotter():
         size_ticksnumber_inset = 20
         size_axeslabel_inset = 20
 
+        r0_list = self.r0_list
+        r1_list = self.r1_list
+        init0   = self.init0
+        interpolation = "none" # none bilinear bicubic hanning
 
-
-        FILEPATH    = f"/home/tomsc/gdrive/Projects/RiskMap/Analysis/Output_OAD/Simulation/{self.name_topology}_nodes_{self.num_nodes}_samples_{self.num_samples}_maxtime_{self.max_tstep}/"
+        FILEPATH  = f"./Output_OAD/Simulation/{self.name_topology}_nodes_{self.num_nodes}_samples_{self.num_samples}_maxtime_{self.max_tstep}/"
         if not os.path.exists(FILEPATH):
             raise ValueError("Folder not found!!!")
-        FILELIST    = glob.glob(FILEPATH+"*.dat")
 
-
-        r0_list = sorted([float(item.split(".dat")[0].split("_")[-1]) for item in FILELIST])
-
-        with open(FILELIST[0],"r") as fp:
-            data    = fp.readlines()[6:]
-            r1_list = [float(item.split("\t")[0].split()[0]) for item in data] # r1_list
-
-        S = []
-        for r0 in r0_list:
-            file = RiskMap.fname_var_R0(self,r0)
+        S = np.empty(shape=(len(r0_list),len(r1_list)))
+        for idx,r0 in enumerate(r0_list):
+            file = Plotter.fname_var_R0(self,r0)
             with open(file,"r") as fp:               
-                data = fp.readlines()
-                self.name_topology = data[0].split()[-1]
-                dynp_pINI = float(data[4].split()[-1])
-                data = data[6:]
-                row = [float(item.split("\t")[1].split()[0]) for item in data] # solution
-                # S.append(row[0:97])
-                S.append(row)
+                arr = np.loadtxt(file,dtype=float,skiprows=5,delimiter="\t",usecols=1)
+                if len(arr)<len(r1_list): # pad with zeros other values
+                    arr = np.pad(np.array(arr),pad_width=(0,len(r0_list)-len(arr)))
+                S[:,idx] = arr
 
-        arr = np.transpose(np.array(S, dtype=float))
+        arr = np.array(S, dtype=float)
 
 
         plt.tick_params(labelsize=1*size_ticksnumber) #if written below cax, it doesnt work
-        plt.plot([1.0/(1-dynp_pINI),0.0],[0.0,1/(dynp_pINI*(1-dynp_pINI))], color='#dd181f', linewidth=1.5)
-
-
-        interpolation = "none" # none bilinear bicubic hanning
+        # plt.plot([1.0/(1-init0),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5)
+        
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
                     origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
 
@@ -563,11 +555,6 @@ class Plotter():
         ax.set_xlabel(r"$\mathcal{R}_0$", **hfont)
         ax.set_ylabel(r"$\mathcal{R}_1$", {'fontsize': size_axeslabel})
 
-        # ax.set_xlim((0,max(r0_list)))
-        # ax.set_ylim((0,max(r1_list)))
-        
-        # xticks = [1, 2.5, 4]
-        # plt.xticks([0.5,1.0,1.5,2.0])
         
         plt.tick_params(labelsize=size_ticksnumber)
 

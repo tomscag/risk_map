@@ -15,8 +15,8 @@ class Inputs():
         self.america["r0_list"]     = np.linspace(0,75e3,100)
         self.america["r1_list"]     = np.linspace(0,25,100)  # 1.1*(1/self.europe["init0"] )
         self.america["event"]       = "EARL"
-        self.america["r0"] = 10     # Risk map
-        self.america["r1"]= 0.3
+        self.america["r0"] = 45e3     # Risk map
+        self.america["r1"]= 5
         self.america["path_edgelist"] = "../Data/Processed/Topologies/america/powergrid_north_america.el"
         self.america["path_nodelist"] = "../Data/Processed/Topologies/america/america.nodelist"
         self.america["path_risk"]     = f"./Output_OAD/america_r0_{self.america['r0']}_r1_{self.america['r1']}_samples_10_maxtime_2000.dat"
