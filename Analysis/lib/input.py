@@ -56,8 +56,10 @@ class Inputs():
         self.random["num_nodes"]  = 5000
         self.random["num_samples"]= 50
         self.random["max_tstep"]  = 5000
-        self.random["prob_link"]  = 0.05
+        self.random["prob_link"]  = 1.00
         self.random["init0"]      = 0.05
+        self.random["r0_list"]    = np.linspace(0,3,100)/self.random["prob_link"]
+        self.random["r1_list"]    = np.linspace(0,25,100)   
 
         # Full network
         self.full = dict()
@@ -65,3 +67,5 @@ class Inputs():
         self.full["num_samples"]= 50
         self.full["max_tstep"]  = 5000
         self.full["init0"]      = 0.05
+        self.full["r0_list"]    = np.linspace(0,3,100)
+        self.full["r1_list"]    = np.linspace(0,25,100)  

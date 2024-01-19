@@ -6,19 +6,16 @@ from lib.input import Inputs
 
 
 
-def load_topology(name_topology,num_nodes=None):
+def load_topology(name_topology,num_nodes=None, prob_er=0.005):
     '''
-        if name_topology=="full"
-            Return a fully connected graph
-
-            num_nodes: int
-                number of nodes
-        else
-            Return a sampled graph from an existing topology
+    num_nodes: int
+        Number of nodes
+    prob_er: float
+        Edge density for Erdos-Renyi graph
     '''
     
     if name_topology=="random":
-        return nx.fast_gnp_random_graph(num_nodes, p=0.005, seed=None, directed=False)
+        return nx.fast_gnp_random_graph(num_nodes, p=prob_er, seed=None, directed=False)
     
     elif name_topology=="full":
         return nx.complete_graph(num_nodes)

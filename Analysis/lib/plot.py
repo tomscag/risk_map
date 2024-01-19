@@ -480,22 +480,32 @@ class Plotter():
         self.figdict = {}   # For saving
         self.name_topology = name_topology
 
+        font = {'family' : 'arial', 'weight' :'normal'}
+        plt.rc('font', **font)
+
+        SMALL_SIZE = 20
+        MEDIUM_SIZE = 25
+        BIGGER_SIZE = 30
+
+        plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+        plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
+        plt.rc('axes', labelsize=BIGGER_SIZE)    # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+        plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+        plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+        plt.rc('figure', titlesize=SMALL_SIZE)  # fontsize of the figure title
 
         Inputso = Inputs()  
         inputs_dct= getattr(Inputso, self.name_topology)
+        self.inputs_dct = inputs_dct
         self.num_nodes = inputs_dct["num_nodes"]
         self.num_samples = inputs_dct["num_samples"]
         self.max_tstep = inputs_dct["max_tstep"]
-        self.path_edgelist = inputs_dct["path_edgelist"]
-        self.path_nodelist = inputs_dct["path_nodelist"]
-        self.path_risk = inputs_dct["path_risk"]
-        self.evname  = inputs_dct["event"]
-        self.r0  = inputs_dct["r0"]
-        self.r1  = inputs_dct["r1"]
         self.r0_list  = inputs_dct["r0_list"]
         self.r1_list  = inputs_dct["r1_list"]
         self.init0    = inputs_dct["init0"]
         # Figure parameters (riskmap)
+
 
 
 
@@ -540,7 +550,12 @@ class Plotter():
 
 
         plt.tick_params(labelsize=1*size_ticksnumber) #if written below cax, it doesnt work
-        # plt.plot([1.0/(1-init0),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5)
+        if self.name_topology == "random":
+            prob = self.inputs_dct["prob_link"]
+            plt.plot([1.0/(prob*(1-init0)),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5)
+        # elif self.name_topology == "america":
+        #     prob = 0.00015 # America
+        #     plt.plot([1.0/(prob*(1-init0)),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5)
         
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
                     origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)

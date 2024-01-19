@@ -16,12 +16,12 @@ if __name__ == "__main__":
     print(f"\nPlotting in {os.getcwd()}")
 
 
-    
-    name_topology = "europe"   # america europe airports
+    # random_prob_0.250
+    name_topology = "america"   # america europe airports
     # evname = "EARL" # EARL MATTHEW KARL GONZALO mock2 ciaran
 
 
-    Map = RiskMap(name_topology)
+    # Map = RiskMap(name_topology)
     Plot = Plotter(name_topology)
 
     ##      1) Leaflet map powergrids
