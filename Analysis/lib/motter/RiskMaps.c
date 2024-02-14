@@ -1026,6 +1026,7 @@ void RemovalAndCascade_Simultaneous_RiskMap(
 	 */
 	 
 	int i, j, c, flag, failed_node_index;
+	int failed_node_index_temp;   // This is to keep track of each step of the cascade [TS]
 	int maxsize, max_bc_node;
 	double G;
 	FILE *fp;
@@ -1044,22 +1045,38 @@ void RemovalAndCascade_Simultaneous_RiskMap(
 	BetweennesCentrality_Motter(veins, num_veins, sizes, bc);
 	c++;
 
+	// Save results in the format list_nodes_step1, list_nodes_step2, ...  , size of LCC [TS]
+	fp = fopen(fout,"a+");
+
+	for (int i = 0; i < failed_node_index; i++) {  
+        fprintf(fp, "%d ", failed_nodes[i]);      
+    }
+	fprintf(fp, ","); 
+	failed_node_index_temp = failed_node_index;
+
 	//Cascade goes on until all nodes are under their capacity
 	while(Check_Capacity(bc, capacity)==1){
 		SimultaneousRemoval_RiskMap(veins, num_veins, inv_ind, bc, capacity,
 									failed_nodes, &failed_node_index);
 		BetweennesCentrality_Motter(veins, num_veins, sizes, bc);
-	
+
 		printf("deletion %d; removed nodes %d\n", c, failed_node_index);
 		c++;
+		// Save the list of nodes failed at each round of the cascade
+		for (int i = failed_node_index_temp; i < failed_node_index; i++) {  
+        	fprintf(fp, "%d ", failed_nodes[i]);      
+    	}
+		fprintf(fp, ","); 
+		failed_node_index_temp = failed_node_index;
+		
+
 	}
 
 	//Compute the largest connected component
 	LargestCC(c, sizes, &maxsize);
 	G = (float)(maxsize)/(float)(NN);
 
-	fp = fopen(fout,"w+");
-	fprintf(fp,"%g",G);
+	fprintf(fp,"%g\n",G);
 	fclose(fp);
 
 	return;
