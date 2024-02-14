@@ -1049,9 +1049,9 @@ void RemovalAndCascade_Simultaneous_RiskMap(
 	fp = fopen(fout,"a+");
 
 	for (int i = 0; i < failed_node_index; i++) {  
-        fprintf(fp, "%d ", failed_nodes[i]);      
+        fprintf(fp, "Initial node %d, ", failed_nodes[i]);      
     }
-	fprintf(fp, ","); 
+	// fprintf(fp, ","); 
 	failed_node_index_temp = failed_node_index;
 
 	//Cascade goes on until all nodes are under their capacity
@@ -1066,17 +1066,18 @@ void RemovalAndCascade_Simultaneous_RiskMap(
 		for (int i = failed_node_index_temp; i < failed_node_index; i++) {  
         	fprintf(fp, "%d ", failed_nodes[i]);      
     	}
-		fprintf(fp, ","); 
+		// fprintf(fp, ","); // Print a comma to separate the cascading steps
 		failed_node_index_temp = failed_node_index;
 		
 
 	}
 
 	//Compute the largest connected component
-	LargestCC(c, sizes, &maxsize);
-	G = (float)(maxsize)/(float)(NN);
+	// LargestCC(c, sizes, &maxsize);
+	// G = (float)(maxsize)/(float)(NN);
+	// fprintf(fp,"%g\n",G);
+	fprintf(fp,"\n");
 
-	fprintf(fp,"%g\n",G);
 	fclose(fp);
 
 	return;
