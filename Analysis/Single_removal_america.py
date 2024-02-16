@@ -23,35 +23,36 @@ def read_network():
     return G0, Gcc[0]
 
 
-def analyze(r0,r1_list):
+def analyze(r0,r1):
     """ Simulate the reaction-diffusion over the graph G 
         and save the results in a text file
     """
+    # print(f"Parameters r0 {r0:3.0f} r1 {r1:3.2f}")
     size = 20
-    for r1 in r1_list:
-        dict_comp = Counter({})
+    dict_comp = Counter({})
 
-        for run in range(num_run):
-            nodelist = np.random.choice(range(N),size=size)
-            O,dyn_VS = gillespie_optimized([G,nodelist,r0,r1,MAX_TSTEP,NUM_SAMPLES])
-            G1  = G.subgraph(dyn_VS)
-            cc = sorted(nx.connected_components(G1), key=len, reverse=True)
-            dict_comp += Counter([len(item) for item in cc])
-            print(f"run {run}\t initial node {nodelist}\t GCC {O}")
+    for run in range(num_run):
+        nodelist = np.random.choice(range(N),size=size)
+        O,dyn_VS = gillespie_optimized([G,nodelist,r0,r1,MAX_TSTEP,NUM_SAMPLES])
+        G1  = G.subgraph(dyn_VS)
+        cc = sorted(nx.connected_components(G1), key=len, reverse=True)
+        dict_comp += Counter([len(item) for item in cc])
+        print(f"r0 {r0:3.0f} r1 {r1:3.2f} run {run}\t GCC {O:1.4f}")
 
-        file_path = f"OAD_[{r0:3.0f},{r1:3.2f}]_nremovals_{size}_nrun_{num_run}.txt"
-        # Save the dictionary to a text file
-        with open(file_path, 'w') as file:
-            for key, value in dict_comp.items():
-                file.write(f'{key}: {value}\n')
+    file_path = f"./OAD_[{r0:3.0f},{r1:3.2f}]_nremovals_{size}_nrun_{num_run}.txt"
+    # Save the dictionary to a text file
+    with open(file_path, 'w') as file:
+        for key, value in dict_comp.items():
+            file.write(f'{key}: {value}\n')
 
 
-def run_parallel(r0_list,r1_list,numcpu):
+def run_parallel(par_list,numcpu):
     """ Parallelize the execution of the function analyze """
     pool = mp.Pool(numcpu)
-    for i in range(len(r0_list)):
-        pool.apply_async(analyze, args = (r0_list[i], r1_list, ))
-        # analyze(r0_list[i], r1_list, filepath_output)
+    for i in range(len(par_list)):
+        r0,r1 = par_list[i]
+        pool.apply_async(analyze, args = (r0, r1, ))
+        # analyze(r0,r1)
     pool.close()
     pool.join()
 
@@ -63,8 +64,7 @@ def run_parallel(r0_list,r1_list,numcpu):
 
 
 if __name__ == "__main__":
-    numcpu = 3
-    num_nodes = 100  # Nodes 
+    numcpu = 20
     p_america = 0.00015 
     fpathelist = "./lib/motter/NetworkTopologies/network_america.edgelist"
     G,_  = read_network()
@@ -82,7 +82,8 @@ if __name__ == "__main__":
 
     r0_list = np.arange(5e4,12e4,int(20e3))
     r1_list = np.arange(0,7,1)
-    run_parallel(r0_list,r1_list,numcpu)
+    par_list = [(r0,r1) for r0 in r0_list for r1 in r1_list]
+    run_parallel(par_list,numcpu)
 
 
     # dict_comp = Counter({})
