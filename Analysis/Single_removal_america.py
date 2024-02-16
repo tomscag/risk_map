@@ -80,7 +80,7 @@ if __name__ == "__main__":
     r0 = 0.01*1*(N/size)/(p_america) # Circa 5e4
     r1 = 1e0
 
-    r0_list = np.arange(1e4,9e4,int(20e3))
+    r0_list = np.arange(2e4,5e4,int(4e3))
     r1_list = np.arange(0,1.1,0.2)
     par_list = [(r0,r1) for r0 in r0_list for r1 in r1_list]
     run_parallel(par_list,numcpu)
