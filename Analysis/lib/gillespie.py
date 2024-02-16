@@ -181,11 +181,12 @@ def gillespie_optimized(argv):
         # print(dyn_NS)
         frac_list.append(dyn_NS/net_N)  # Save result here
 
+
     
 
     avg = sum(frac_list)/len(frac_list)
 
-    return avg
+    return avg,dyn_VS
     
 
 
@@ -254,13 +255,6 @@ def gillespie_optimized_fraction(argv):
             if dyn_NI == int(net_N*dynp_pINI):
                 break
 
-        # # Sort vertices and apply the initial condition
-        # ver_i_list = []
-        # ver_i_list.append(init_node)
-        # dyn_VI[dyn_NI] = init_node
-        # dyn_NI += 1 # total affected
-        # dyn_sig[init_node] = 1    # 1: affected, 0: operational
-        # dyn_NIk += nw.degree(init_node) # somma dei degree degli infetti ? N_IS ?        
 
         # populate NS and dyn_VS (initial  condition)
         ver_TOT = range(net_N)  
