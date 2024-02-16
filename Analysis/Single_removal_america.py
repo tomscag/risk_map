@@ -80,26 +80,10 @@ if __name__ == "__main__":
     r0 = 0.01*1*(N/size)/(p_america) # Circa 5e4
     r1 = 1e0
 
-    r0_list = np.arange(5e4,12e4,int(20e3))
-    r1_list = np.arange(0,7,1)
+    r0_list = np.arange(1e4,9e4,int(20e3))
+    r1_list = np.arange(0,1.1,0.2)
     par_list = [(r0,r1) for r0 in r0_list for r1 in r1_list]
     run_parallel(par_list,numcpu)
 
-
-    # dict_comp = Counter({})
-    # for run in range(num_run):
-    #     nodelist = np.random.choice(range(N),size=size)
-    #     O,dyn_VS = gillespie_optimized([G,nodelist,r0,r1,MAX_TSTEP,NUM_SAMPLES])
-    #     G1  = G.subgraph(dyn_VS)
-    #     cc = sorted(nx.connected_components(G1), key=len, reverse=True)
-    #     dict_comp += Counter([len(item) for item in cc])
-    #     print(f"run {run}\t initial node {nodelist}\t GCC {O}")
-    
-        
-    # file_path = f"OAD_[{r0:3.0f},{r1:3.2f}]_numremovals_{size}.txt"
-    # # Save the dictionary to a text file
-    # with open(file_path, 'w') as file:
-    #     for key, value in dict_comp.items():
-    #         file.write(f'{key}: {value}\n')
 
             
