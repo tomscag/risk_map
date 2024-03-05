@@ -17,12 +17,12 @@ if __name__ == "__main__":
 
 
     # random_prob_0.250
-    name_topology = "america"   # america europe airports
+    name_topology = "airports"   # america europe airports
     # evname = "EARL" # EARL MATTHEW KARL GONZALO mock2 ciaran
 
 
-    # Map = RiskMap(name_topology)
-    Plot = Plotter(name_topology)
+    Map = RiskMap(name_topology)
+    # Plot = Plotter(name_topology)
 
     ##      1) Leaflet map powergrids
     # Map.plot_leaflet(evname)
@@ -36,22 +36,22 @@ if __name__ == "__main__":
 
 
     ##      2) Parametric plot
-    Plot.plot_heatmap2d()
+    # Plot.plot_heatmap2d()
 
 
     ##      3) Plot Map of the network infrstructure
-    # Map.plot_network(name_topology)
+    Map.plot_network()
 
     ##      4) Plot total risk for every storm
     # Map.plot_total_risk()
 
 
     ## Show or save
-    save = True
+    save = False
     if not save: #args.save:
         plt.show()
     else:
-        for figname, fig in Plot.figdict.items():
+        for figname, fig in Map.figdict.items():
             print("Saving {}...".format(figname))
             fig.savefig(
                 "Figures/{}.pdf".format(figname), format='pdf', bbox_inches='tight', 

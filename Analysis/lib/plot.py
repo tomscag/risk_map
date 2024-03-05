@@ -417,7 +417,7 @@ class RiskMap():
         tiles = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png"
         attr  = "<a href=http://www.openstreetmap.org/copyright>OpenStreetMap</a>"
 
-        path_edgelist, path_nodelist = load_topology_parameters(self.name_topology)
+        path_edgelist, path_nodelist, path_risk = load_topology_parameters(self.name_topology)
         # G = nx.read_edgelist(path_edgelist)
         # G = G.subgraph([str(item) for item in df_PowerGrid.index])
         data_nodes = pd.read_csv(path_nodelist,sep=" ",index_col=0, usecols=[0,1,2],names=["label","lon","lat"])
@@ -435,7 +435,7 @@ class RiskMap():
                 (data_nodes.loc[edge.node1].lat,data_nodes.loc[edge.node1].lon),
                 (data_nodes.loc[edge.node2].lat,data_nodes.loc[edge.node2].lon),
                 ),
-                weight=3,  # default 3, use 0.75 for airports
+                weight=0.75,  # default 3, use 0.75 for airports
                 color = "#636363"
                 ).add_to(map)    
                 ,axis=1)
@@ -449,7 +449,7 @@ class RiskMap():
         if self.name_topology == "america":
             list_event  = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
             for event in list_event:
-                data_storm = RiskMap.load_data_stressor(event,self.name_topology)
+                data_storm = load_data_stressor(event,self.name_topology)
                 data_storm.apply(lambda point: folium.CircleMarker(location=[point.Latitude, point.Longitude],
                     radius=0.05*point["wmo_wind.x"],color="#a50f15", opacity=0.75,
                     weight=5
@@ -457,7 +457,15 @@ class RiskMap():
                 folium.PolyLine(tuple((a,b) for a,b in zip(data_storm.Latitude, data_storm.Longitude)) ,
                                 color = "#de2d26",
                                 ).add_to(map)
-
+        
+        if self.name_topology == "airports":
+            data_quakes = load_data_stressor(None,self.name_topology)
+            data_quakes["energy"] = 2e-8*10**data_quakes["magnitude"]
+            data_quakes.apply(lambda point: folium.CircleMarker(location=[point.Latitude, point.Longitude],
+                    radius=1*point["energy"],color="#a50f15", opacity=0.75,
+                    fill=True, stroke=False, fill_opacity=0.95,
+                    weight=5
+                    ).add_to(map),axis=1)
 
 
         map.save(self.name_topology+'.html')
