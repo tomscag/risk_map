@@ -422,43 +422,99 @@ class RiskMap():
         # G = G.subgraph([str(item) for item in df_PowerGrid.index])
         data_nodes = pd.read_csv(path_nodelist,sep=" ",index_col=0, usecols=[0,1,2],names=["label","lon","lat"])
         data_edges = pd.read_csv(path_edgelist,sep=" ",names=["node1","node2"])
-        fig, ax = plt.subplots(figsize=(6, 6))
 
         crs =  "EPSG3857"   # coordinate reference systems   EPSG3857 (default)  EPSG4326
-        # Create map
-        map = folium.Map(tiles=tiles, attr = attr,location=[39.50, -98.35], 
-                         zoom_start=4.5, zoom_control=False, crs=crs)
 
-
-        # Add edges to map
-        data_edges.apply( lambda edge:  folium.PolyLine( (
-                (data_nodes.loc[edge.node1].lat,data_nodes.loc[edge.node1].lon),
-                (data_nodes.loc[edge.node2].lat,data_nodes.loc[edge.node2].lon),
-                ),
-                weight=0.75,  # default 3, use 0.75 for airports
-                color = "#636363"
-                ).add_to(map)    
-                ,axis=1)
-
-        # Add nodes to map
-        data_nodes.apply(lambda point: folium.CircleMarker(location=[point.lat, point.lon],
-                        radius=1,color="#252525", opacity=0.75,
-                        weight=5
-                        ).add_to(map),axis=1)
 
         if self.name_topology == "america":
+            # Create map
+            map = folium.Map(tiles=tiles, attr = attr,location=[39.50, -98.35], 
+                            zoom_start=4.25, zoom_control=False, crs=crs)
+
+            # Add edges to map
+            data_edges.apply( lambda edge:  folium.PolyLine( (
+                    (data_nodes.loc[edge.node1].lat,data_nodes.loc[edge.node1].lon),
+                    (data_nodes.loc[edge.node2].lat,data_nodes.loc[edge.node2].lon),
+                    ),
+                    weight=3,  # default 3, use 0.75 for airports
+                    color = "#636363"
+                    ).add_to(map)    
+                    ,axis=1)
+
+            # Add nodes to map
+            data_nodes.apply(lambda point: folium.Circle(location=[point.lat, point.lon],
+                            radius=6000,color="#252525", 
+                            stroke=False,fill_opacity=0.75, fill=True,
+                            weight=5
+                            ).add_to(map),axis=1)
+
             list_event  = ['INGRID', 'IRENE', 'EARL', 'KATE', 'SANDY', 'NATE', 'ISAAC', 'PAULA', 'MATTHEW', 'JOAQUIN', 'BILL', 'KATIA', 'HERMINE', 'ALEX', 'TOMAS', 'CRISTOBAL', 'IDA', 'KARL', 'ARTHUR', 'GONZALO', 'BERTHA']
             for event in list_event:
                 data_storm = load_data_stressor(event,self.name_topology)
-                data_storm.apply(lambda point: folium.CircleMarker(location=[point.Latitude, point.Longitude],
-                    radius=0.05*point["wmo_wind.x"],color="#a50f15", opacity=0.75,
-                    weight=5
-                    ).add_to(map),axis=1)
                 folium.PolyLine(tuple((a,b) for a,b in zip(data_storm.Latitude, data_storm.Longitude)) ,
                                 color = "#de2d26",
                                 ).add_to(map)
-        
+                data_storm.apply(lambda point: folium.CircleMarker(location=[point.Latitude, point.Longitude],
+                    radius=0.25*1.03**point["wmo_wind.x"],color="#a50f15", opacity=0.75,
+                    fill=True, stroke=False, fill_opacity=0.75,
+                    weight=5
+                    ).add_to(map),axis=1)
+
+        if self.name_topology == "europe":
+            # Create map
+            map = folium.Map(tiles=tiles, attr = attr,location=[44.45, 13.85], 
+                            zoom_start=4.25, zoom_control=False, crs=crs)
+
+            # Add edges to map
+            data_edges.apply( lambda edge:  folium.PolyLine( (
+                    (data_nodes.loc[edge.node1].lat,data_nodes.loc[edge.node1].lon),
+                    (data_nodes.loc[edge.node2].lat,data_nodes.loc[edge.node2].lon),
+                    ),
+                    weight=3,  # default 3, use 0.75 for airports
+                    color = "#636363"
+                    ).add_to(map)    
+                    ,axis=1)
+
+            # Add nodes to map
+            data_nodes.apply(lambda point: folium.Circle(location=[point.lat, point.lon],
+                            radius=6000,color="#252525", 
+                            stroke=False,fill_opacity=0.75, fill=True,
+                            weight=5
+                            ).add_to(map),axis=1)
+
+            list_event  = ["mock1","mock2"]
+            for event in list_event:
+                data_storm = load_data_stressor(event,self.name_topology)
+                folium.PolyLine(tuple((a,b) for a,b in zip(data_storm.Latitude, data_storm.Longitude)) ,
+                                color = "#de2d26",
+                                ).add_to(map)
+                data_storm.apply(lambda point: folium.CircleMarker(location=[point.Latitude, point.Longitude],
+                    radius=0.25*1.03**point["wmo_wind.x"],color="#a50f15", opacity=0.75,
+                    fill=True, stroke=False, fill_opacity=0.75,
+                    weight=5
+                    ).add_to(map),axis=1)
         if self.name_topology == "airports":
+
+            # Create map
+            map = folium.Map(tiles=tiles, attr = attr,location=[10, 38.00], 
+                            zoom_start=2.25, zoom_control=False, crs=crs)
+
+            # Add edges to map
+            data_edges.apply( lambda edge:  folium.PolyLine( (
+                    (data_nodes.loc[edge.node1].lat,data_nodes.loc[edge.node1].lon),
+                    (data_nodes.loc[edge.node2].lat,data_nodes.loc[edge.node2].lon),
+                    ),
+                    weight=0.75,  # default 3, use 0.75 for airports
+                    color = "#636363"
+                    ).add_to(map)    
+                    ,axis=1)
+
+            # Add nodes to map
+            data_nodes.apply(lambda point: folium.CircleMarker(location=[point.lat, point.lon],
+                            radius=1,color="#252525", opacity=0.75,
+                            weight=5
+                            ).add_to(map),axis=1)
+
             data_quakes = load_data_stressor(None,self.name_topology)
             data_quakes["energy"] = 2e-8*10**data_quakes["magnitude"]
             data_quakes.apply(lambda point: folium.CircleMarker(location=[point.Latitude, point.Longitude],
@@ -469,6 +525,9 @@ class RiskMap():
 
 
         map.save(self.name_topology+'.html')
+        
+
+
 
 
 
