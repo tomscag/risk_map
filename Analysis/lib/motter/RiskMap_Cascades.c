@@ -1,4 +1,4 @@
-#define NN 16167
+#define NN 13844
 
 #define len(x) (sizeof(x) / sizeof(x[0]))
 #define iprint(x) printf("%d\n", x)
