@@ -19,13 +19,13 @@ def check_arg(node_to_remove):
 
 
 
-def run_cascades(node_to_remove,NN):
+def run_cascades(node_to_remove,NN, alpha):
 
     script_name_out = "RiskMap_Cascades.c"
     # script_name_out = "RiskMap_Cascades_N%d.c" % NN
     finput_net1 = "NetworkTopologies/network_airports.neighbors"
     finput_net2 = "NetworkTopologies/network_airports.edgelist"
-    alpha = 0.0  # Tolerance
+    # alpha = 0.0  # Tolerance
 
     # os.system("sed '1 i\#define NN %d' %s > %s" % (NN, script_name_in, script_name_out))
 
@@ -53,16 +53,21 @@ def run_cascades(node_to_remove,NN):
     os.system('./'+str(exe_name)+' '+fname+' '+str(randseed)) #run with valgrind when updates are made, to check memory is OK
     # os.system('valgrind --leak-check=yes --track-origins=yes ./'+str(exe_name)+' '+fname+' '+str(randseed))
 
-    # os.system("rm %s %s" % (exe_name,fname))
+    if os.path.exists(exe_name):
+        os.system("rm %s" % (exe_name))
+
+    if os.path.exists(fname):
+        os.system("rm %s" % (fname))
+    
 
 
 
-def run_parallel(NN,numcpu):
+def run_parallel(NN,numcpu, alpha):
     """ Parallelize the execution of the function run_cascades """
     pool = mp.Pool(numcpu)
     for node_to_remove in range(NN):
         node_to_remove = [node_to_remove] #
-        pool.apply_async(run_cascades, args = (node_to_remove,NN  ))
+        pool.apply_async(run_cascades, args = (node_to_remove,NN, alpha  ))
         # run_cascades(node_to_remove,NN)
 
     pool.close()
@@ -77,6 +82,8 @@ def run_parallel(NN,numcpu):
 if __name__ == "__main__":
 
     NN = 3182
-    numcpu = 2
+    numcpu = 20
 
-    run_parallel(NN,numcpu)
+    alpha_list = np.arange(0,1,0.1)[1:]
+    for alpha in alpha_list:
+        run_parallel(NN,numcpu,alpha)
