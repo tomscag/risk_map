@@ -59,6 +59,10 @@ class RiskMap():
         self.r0  = inputs_dct["r0"]
         self.r1  = inputs_dct["r1"]
 
+        if self.name_topology == "random":
+            prob = inputs_dct["prob_link"]
+            self.name_topology = f"{self.name_topology}_prob_{prob:.3f}"
+
         # Figure parameters (riskmap)
         self.width  = 2500 
         self.height = 1800
@@ -506,6 +510,9 @@ class Plotter():
         self.init0    = inputs_dct["init0"]
         # Figure parameters (riskmap)
 
+        if self.name_topology == "random":
+            prob = inputs_dct["prob_link"]
+            self.name_topology = f"{self.name_topology}_prob_{prob:.3f}"
 
 
 
@@ -527,13 +534,14 @@ class Plotter():
         size_text = 20 #plt.text(-0.16,1.05, r'$(A)$', horizontalalignment='left', verticalalignment='center',transform=ax.transAxes, fontsize= size_text) 
         size_ticksnumber_inset = 20
         size_axeslabel_inset = 20
+        cmap = 'RdBu' # 'viridis'
 
         r0_list = self.r0_list
         r1_list = self.r1_list
         init0   = self.init0
         interpolation = "none" # none bilinear bicubic hanning
 
-        FILEPATH  = f"./Output_OAD/Simulation/{self.name_topology}_nodes_{self.num_nodes}_samples_{self.num_samples}_maxtime_{self.max_tstep}/"
+        FILEPATH  = f"./Output_OAD/Simulation/{self.name_topology}_nodes_{self.num_nodes}_samples_{self.num_samples}_maxtime_{self.max_tstep}/"    
         if not os.path.exists(FILEPATH):
             raise ValueError("Folder not found!!!")
 
@@ -550,15 +558,15 @@ class Plotter():
 
 
         plt.tick_params(labelsize=1*size_ticksnumber) #if written below cax, it doesnt work
-        if self.name_topology == "random":
+        if "random" in self.name_topology:
             prob = self.inputs_dct["prob_link"]
-            plt.plot([1.0/(prob*(1-init0)),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5)
+            plt.plot([1.0/(prob*(1-init0)),0.0],[0.0,1/(init0*(1-init0))], color='#222222', linewidth=1.5) # '#dd181f' (red)
         # elif self.name_topology == "america":
         #     prob = 0.00015 # America
         #     plt.plot([1.0/(prob*(1-init0)),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5)
         
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
-                    origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
+                    origin='lower', cmap=cmap, alpha=0.9, aspect='auto', interpolation=interpolation)
 
         cbar = plt.colorbar(im, cax = fig.add_axes([0.95, 0.12, 0.03, 0.66]), shrink=0.99, pad = 0.07)
         # cbar.ax.set_ylabel(r'$S$', rotation=0, fontsize = 25, labelpad=15)
@@ -569,7 +577,7 @@ class Plotter():
         ax.set_xlabel(r"$\mathcal{R}_0$", {'fontsize': size_axeslabel})
         ax.set_xlabel(r"$\mathcal{R}_0$", **hfont)
         ax.set_ylabel(r"$\mathcal{R}_1$", {'fontsize': size_axeslabel})
-
+        ax.ticklabel_format(axis='x', style='sci', scilimits=(0,3))
         
         plt.tick_params(labelsize=size_ticksnumber)
 

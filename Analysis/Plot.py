@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
 
     # random_prob_0.250
-    name_topology = "america"   # america europe airports
+    name_topology = "random"   # america europe airports random
     # evname = "EARL" # EARL MATTHEW KARL GONZALO mock2 ciaran
 
 
