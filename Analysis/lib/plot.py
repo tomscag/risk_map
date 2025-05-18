@@ -59,6 +59,10 @@ class RiskMap():
         self.r0  = inputs_dct["r0"]
         self.r1  = inputs_dct["r1"]
 
+        if self.name_topology == "random":
+            prob = inputs_dct["prob_link"]
+            self.name_topology = f"{self.name_topology}_prob_{prob:.3f}"
+
         # Figure parameters (riskmap)
         self.width  = 2500 
         self.height = 1800
@@ -230,7 +234,7 @@ class RiskMap():
         risk_aggregated.drop("Other",inplace=True,errors='ignore')
         risk_aggregated = risk_aggregated/norm_factor
 
-        return risk_aggregated        
+        return risk_aggregated, risk_intrinsic_nodes        
 
 
     #######################################
@@ -256,7 +260,7 @@ class RiskMap():
 
         state_geo = f"../Data/Processed/Topologies/{self.name_topology}/{self.name_topology}-counties.geojson"
 
-        risk = RiskMap.compute_risk_from_event(self,self.evname,type="oad")
+        risk,_ = RiskMap.compute_risk_from_event(self,self.evname,type="oad")
 
         # Compute fraction ad risk
         RiskMap.compute_fraction_at_risk(self,risk)
@@ -293,6 +297,57 @@ class RiskMap():
 
 
     #######################################
+    ## Scatter plot airports eartquakes
+    def plot_scatter_airports(self,type="oad"):
+
+        SMALL_SIZE = 20
+        MEDIUM_SIZE = 25
+        BIGGER_SIZE = 30
+
+        plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+        plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
+        plt.rc('axes', labelsize=BIGGER_SIZE)    # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+        plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+        plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+        plt.rc('figure', titlesize=SMALL_SIZE)  # fontsize of the figure title
+        self.evname = "earthquakes"
+        self.name_topology = "airports" # Overwrite in case of mistakes
+        print(f"Plotting scatter plot Risk vs Energy...")
+        # _,_, fpath_risk = load_topology_parameters(self.name_topology)
+        risk_aggregated, risk_intrinsic_nodes = RiskMap.compute_risk_from_event(self,self.evname,type)
+
+        # fpath_risk = self.path_risk
+        # Load storm's data
+        # data_quakes     = load_data_stressor(self.evname,self.name_topology)
+
+        # func = lambda item: np.exp(5.24 + 1.44*item) # Bath's law (1966)
+        # data_quakes['energy'] = data_quakes['magnitude'].apply(func)
+
+        # A = data_quakes.groupby("geoid")["energy"].sum()
+
+        # risk_intrinsic_nodes['energy_cumulated'] = np.nan
+        # for row in risk_intrinsic_nodes.iterrows():
+        #     try:
+        #         energ = A.loc[row[1]['geoid']] # 
+        #         risk_intrinsic_nodes.loc[row[0],'energy_cumulated'] = energ
+        #     except:
+        #         risk_intrinsic_nodes.loc[row[0],'energy_cumulated'] = np.nan
+
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.scatter(risk_intrinsic_nodes['Prob'],risk_intrinsic_nodes['RiskTot'],
+                   color='k',alpha=0.65,marker='o',edgecolors='none',s=60)
+        ax.set_xlabel(r"$E^{\textrm{total}}$",fontsize=25)
+        ax.set_ylabel(r"$\textrm{r}_{i}^E$",fontsize=30)
+        ax.grid(visible=True,which='both',linestyle='--',alpha=0.75)
+        # ax.set_xticks(fontsize=18)
+        # ax.set_yticks(fontsize=18)
+        plt.xticks(fontsize=28)
+        plt.yticks(fontsize=28)
+        self.figdict[f'scatter_airports'] = fig
+        return
+
+    #######################################
     ## Risk map plot (airports)
 
     def plot_leaflet_airports(self,type="oad"):
@@ -313,7 +368,7 @@ class RiskMap():
 
         state_geo = f"../Data/Processed/Topologies/{self.name_topology}/{self.name_topology}-world-grid.json"
 
-        risk = RiskMap.compute_risk_from_event(self,self.evname,type)
+        risk,_ = RiskMap.compute_risk_from_event(self,self.evname,type)
 
         # Compute fraction ad risk
         # RiskMap.compute_fraction_at_risk(self,risk)
@@ -386,7 +441,7 @@ class RiskMap():
         Ne = 13844 # Europe power grid nodes
         fig, ax = plt.subplots(figsize=(10,12))
         for evname in events:
-            risk = RiskMap.compute_risk_from_event(self,evname,type="oad")
+            risk,_ = RiskMap.compute_risk_from_event(self,evname,type="oad")
             total_risk.loc[evname] = risk.sum()/Na
 
         # Risk of the European mock events
@@ -573,6 +628,9 @@ class Plotter():
         self.init0    = inputs_dct["init0"]
         # Figure parameters (riskmap)
 
+        if self.name_topology == "random":
+            prob = inputs_dct["prob_link"]
+            self.name_topology = f"{self.name_topology}_prob_{prob:.3f}"
 
 
 
@@ -594,13 +652,14 @@ class Plotter():
         size_text = 20 #plt.text(-0.16,1.05, r'$(A)$', horizontalalignment='left', verticalalignment='center',transform=ax.transAxes, fontsize= size_text) 
         size_ticksnumber_inset = 20
         size_axeslabel_inset = 20
+        cmap = 'viridis' # 'viridis' 'RdBu'
 
         r0_list = self.r0_list
         r1_list = self.r1_list
         init0   = self.init0
         interpolation = "none" # none bilinear bicubic hanning
 
-        FILEPATH  = f"./Output_OAD/Simulation/{self.name_topology}_nodes_{self.num_nodes}_samples_{self.num_samples}_maxtime_{self.max_tstep}/"
+        FILEPATH  = f"./Output_OAD/Simulation/{self.name_topology}_nodes_{self.num_nodes}_samples_{self.num_samples}_maxtime_{self.max_tstep}/"    
         if not os.path.exists(FILEPATH):
             raise ValueError("Folder not found!!!")
 
@@ -617,15 +676,15 @@ class Plotter():
 
 
         plt.tick_params(labelsize=1*size_ticksnumber) #if written below cax, it doesnt work
-        if self.name_topology == "random":
+        if "random" in self.name_topology:
             prob = self.inputs_dct["prob_link"]
-            plt.plot([1.0/(prob*(1-init0)),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5)
+            plt.plot([1.0/(prob*(1-init0)),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5) # '#dd181f' (red) '#222222' (black)
         # elif self.name_topology == "america":
         #     prob = 0.00015 # America
         #     plt.plot([1.0/(prob*(1-init0)),0.0],[0.0,1/(init0*(1-init0))], color='#dd181f', linewidth=1.5)
         
         im = plt.imshow(arr, extent=[np.min(r0_list),np.max(r0_list),np.min(r1_list),np.max(r1_list)], 
-                    origin='lower', cmap='viridis', alpha=0.9, aspect='auto', interpolation=interpolation)
+                    origin='lower', cmap=cmap, alpha=0.9, aspect='auto', interpolation=interpolation)
 
         cbar = plt.colorbar(im, cax = fig.add_axes([0.95, 0.12, 0.03, 0.66]), shrink=0.99, pad = 0.07)
         # cbar.ax.set_ylabel(r'$S$', rotation=0, fontsize = 25, labelpad=15)
@@ -636,7 +695,7 @@ class Plotter():
         ax.set_xlabel(r"$\mathcal{R}_0$", {'fontsize': size_axeslabel})
         ax.set_xlabel(r"$\mathcal{R}_0$", **hfont)
         ax.set_ylabel(r"$\mathcal{R}_1$", {'fontsize': size_axeslabel})
-
+        ax.ticklabel_format(axis='x', style='sci', scilimits=(0,3))
         
         plt.tick_params(labelsize=size_ticksnumber)
 

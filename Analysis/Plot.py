@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
 
     # random_prob_0.250
-    name_topology = "airports"   # america europe airports
+    name_topology = "airports"   # america europe airports random
     # evname = "EARL" # EARL MATTHEW KARL GONZALO mock2 ciaran
 
 
@@ -28,6 +28,7 @@ if __name__ == "__main__":
     # Map.plot_leaflet(evname)
 
     ##      1 bis) Leaflet map airports
+    Map.plot_scatter_airports()
     # Map.plot_leaflet_airports()
 
 
