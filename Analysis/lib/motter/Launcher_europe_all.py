@@ -53,7 +53,11 @@ def run_cascades(node_to_remove,NN,alpha):
     os.system('./'+str(exe_name)+' '+fname+' '+str(randseed)) #run with valgrind when updates are made, to check memory is OK
     # os.system('valgrind --leak-check=yes --track-origins=yes ./'+str(exe_name)+' '+fname+' '+str(randseed))
 
-    os.system("rm %s %s" % (exe_name,fname))
+    if os.path.exists(exe_name):
+        os.system("rm %s" % (exe_name))
+
+    if os.path.exists(fname):
+        os.system("rm %s" % (fname))
 
 
 

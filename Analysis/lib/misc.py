@@ -90,9 +90,9 @@ def load_data_stressor(event_name=None,name_topology="america"):
     elif name_topology == "airports":
         _dir  = f'../Data/Processed/Earthquakes/earthquakes_World_2000-2023_M7.csv'
         data_quakes = pd.read_csv(
-                    _dir, delimiter=',', usecols=[1,2,3,4],
-                    names=["Latitude", "Longitude", "depth", "magnitude"],
-                    header=0,dtype=float) 
+                    _dir, delimiter=',', usecols=[1,2,3,4,5],
+                    names=["Latitude", "Longitude", "depth", "magnitude","geoid"],
+                    header=0,dtype={"geoid":str}) 
         return data_quakes
 
 
