@@ -1,13 +1,20 @@
 import networkx as nx
 import numpy as np
 
+class OAD:
+    """
+        Simulate the OAD model on a network
+    """
 
-
-class OAD_model():
-
-    def __init__(self,G,lam,gam,tmax,init0) -> None:
+    def __init__(self, 
+                 G:nx.Graph, 
+                 lam:float, 
+                 gam:float, 
+                 tmax:float, 
+                 init0:float
+                 ) -> None:
         '''
-        G: networkx object
+        G: nx.Graph
             The graph topology
         lam: float
             Local spreading parameter
@@ -15,37 +22,47 @@ class OAD_model():
             Non-local spreading parameter
         tmax: float, optional
             Maximum time to find the solution
-        num_sam: int, optional
-            Number of samples to run the dynamics
         init0: float
             Initial fraction of infected nodes
         '''
-        self.net_N = G.number_of_nodes()
+        self.num_nodes = G.number_of_nodes()
         self.G = G
-        self.lam = lam/self.net_N
-        self.gam = gam/(self.net_N**2) 
+        self.lam = lam/self.num_nodes
+        self.gam = gam/(self.num_nodes**2) 
         self.mu = 1     # To rescale the parameters
         self.tmax = tmax
         self.init0 = init0
 
-        my_degrees    = G.degree()
+        my_degrees = G.degree()
         degree_values = [v for k, v in my_degrees]
-        self.net_kmax      = max(degree_values)
+        self.net_kmax = max(degree_values)
 
+    def run(self, num_sam: int=10) -> float:
+        """
+        Run OAD model using an optimized Gillespie algorithm
+        (ref. https://www.sciencedirect.com/science/article/pii/S0010465517301893)
 
-    def RunSimulation(self,num_sam=10):
-        '''
-        num_sam: int, optional
-            Number of samples to run the dynamics
-        '''
-        self.res_sam = [] # Save results here
+        Parameters
+        ----------
+        num_sam : int
+            Number of sample to calculate the average
+
+        Returns
+        -------
+        float
+            The average of the greatest connected component after the 
+            dynamics reaches stationarity
+
+        """
+        print("Running OAD model ...")
+        self._results = []  
 
         for _ in range(num_sam):
 
-            dyn_sig = { i : 0 for i in self.G.nodes()}  # 0:operational, 1:affected
+            dyn_sig = {i : 0 for i in self.G.nodes()}  # 0:operational, 1:affected
             dyn_sig = dict.fromkeys(dyn_sig, 0) # {1: 0, 136:0, 992: 0...}
-            list_I = [None for item in range(self.net_N)] # [None, None, None...]
-            list_S = [None for item in range(self.net_N)]
+            list_I = [None for item in range(self.num_nodes)] 
+            list_S = [None for item in range(self.num_nodes)]
             num_I  = 0
             num_R  = 0
             tot_deg_I = 0 # Total degree of infected
@@ -53,16 +70,16 @@ class OAD_model():
             # Initialization
             # Sort vertices and apply the initial condition
             ver_i_list = [] 
-            for ver in np.random.permutation(self.G.nodes()): # np.random.permutation(10) = array([1, 7, 4, 3, 0, 9, 2, 5, 8, 6])
+            for ver in np.random.permutation(self.G.nodes()): 
                 ver_i_list.append(ver)
                 list_I[num_I] = ver
                 num_I += 1 # total infected
                 dyn_sig[ver]= 1 # 
                 tot_deg_I += self.G.degree(ver) # 
-                if num_I == int(self.net_N*self.init0):
+                if num_I == int(self.num_nodes*self.init0):
                     break
 
-            ver_TOT = range(self.net_N)  
+            ver_TOT = range(self.num_nodes)  
             ver_s_list =  list(set(ver_TOT) - set(ver_i_list)) # set: unordered collection on unique elements
             num_S = 0
             dyn_NSk = 0
@@ -71,10 +88,8 @@ class OAD_model():
                 num_S += 1 # total susceptible
                 dyn_NSk += self.G.degree(ver)
 
-
             # Run the dynamics until convergence
-            running = True
-            while running == True:
+            while True:
                 t = 0.0
                 dt = 0.0      
                 # Calculate the total rate
@@ -101,7 +116,6 @@ class OAD_model():
                     ver = list_I[pos_inf]
 
                     # Then, heal it (put it in Recovered)
-                    #print('sto guarendo ver= '+ str(ver), ' ,pos_inf=', str(pos_inf))
                     dyn_sig[ver] = 2   # 2: disrupted
                     tot_deg_I -= self.G.degree(ver)
                     num_I -= 1
@@ -144,9 +158,11 @@ class OAD_model():
 
                 # Termination.
                 if t >= self.tmax or num_I==0 or dt <0:
-                    self.res_sam.append(num_S/self.net_N)  # Save result here
-                    running = False
-                # print(num_S)
+                    self._results.append(num_S/self.num_nodes)  
+                    break
         
-        avg = sum(self.res_sam)/len(self.res_sam)
+        avg = sum(self._results)/len(self._results)
         return avg
+    
+    
+    
