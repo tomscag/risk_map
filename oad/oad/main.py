@@ -7,44 +7,40 @@ class OAD:
     """
 
     def __init__(self, 
-                 G:nx.Graph, 
-                 lam:float, 
-                 gam:float, 
-                 tmax:float, 
+                 G:nx.Graph,
                  init0:float
                  ) -> None:
         '''
         G: nx.Graph
-            The graph topology
-        lam: float
-            Local spreading parameter
-        gam: float
-            Non-local spreading parameter
-        tmax: float, optional
-            Maximum time to find the solution
+            The network topology
         init0: float
             Initial fraction of infected nodes
         '''
         self.num_nodes = G.number_of_nodes()
         self.G = G
-        self.lam = lam/self.num_nodes
-        self.gam = gam/(self.num_nodes**2) 
-        self.mu = 1     # To rescale the parameters
-        self.tmax = tmax
         self.init0 = init0
 
-        my_degrees = G.degree()
-        degree_values = [v for k, v in my_degrees]
-        self.net_kmax = max(degree_values)
+        self.net_kmax = max([v for k, v in G.degree()]) # max degree
+        self._results = []  
 
-    def run(self, num_sam: int=10) -> float:
+    def run(self,
+            lam: float,
+            gam: float,
+            tmax: float,
+            num_samp: int = 10) -> float:
         """
         Run OAD model using an optimized Gillespie algorithm
         (ref. https://www.sciencedirect.com/science/article/pii/S0010465517301893)
 
         Parameters
         ----------
-        num_sam : int
+        lam: float
+            Local spreading parameter
+        gam: float
+            Non-local spreading parameter
+        tmax: float, optional
+            Maximum time to find the solution
+        num_samp : int
             Number of sample to calculate the average
 
         Returns
@@ -55,12 +51,15 @@ class OAD:
 
         """
         print("Running OAD model ...")
-        self._results = []  
+        
+        # Rescale the parameters
+        lam = lam/self.num_nodes
+        gam = gam/(self.num_nodes**2) 
+        mu = 1     # Rescale the other parameters to mu (see paper)
 
-        for _ in range(num_sam):
+        for _ in range(num_samp):
 
             dyn_sig = {i : 0 for i in self.G.nodes()}  # 0:operational, 1:affected
-            dyn_sig = dict.fromkeys(dyn_sig, 0) # {1: 0, 136:0, 992: 0...}
             list_I = [None for item in range(self.num_nodes)] 
             list_S = [None for item in range(self.num_nodes)]
             num_I  = 0
@@ -78,9 +77,8 @@ class OAD:
                 tot_deg_I += self.G.degree(ver) # 
                 if num_I == int(self.num_nodes*self.init0):
                     break
-
-            ver_TOT = range(self.num_nodes)  
-            ver_s_list =  list(set(ver_TOT) - set(ver_i_list)) # set: unordered collection on unique elements
+ 
+            ver_s_list =  list(set(range(self.num_nodes)) - set(ver_i_list))
             num_S = 0
             dyn_NSk = 0
             for ver in ver_s_list:
@@ -93,9 +91,9 @@ class OAD:
                 t = 0.0
                 dt = 0.0      
                 # Calculate the total rate
-                M = self.mu * num_I
-                L = self.lam * tot_deg_I   # This include phantom process
-                A = (self.gam * num_I**2) * num_S # This does not include phantom process (not needed)
+                M = mu * num_I
+                L = lam* tot_deg_I   # This include phantom process
+                A = (gam * num_I**2) * num_S # This does not include phantom process (not needed)
                 dyn_R = M + L + A
 
                 # Select the time step
@@ -103,12 +101,10 @@ class OAD:
                 dt = -np.log(rnd) / dyn_R
                 t += dt
 
-                # Probability m to heal
-                dyn_m = M / dyn_R # m = M/R, probability of a single event of healing
-            
-                dyn_a  = A / dyn_R            # probablity of a field mediated infection
-                dyn_lm = dyn_m + L / dyn_R 
-                rand   = np.random.uniform()  # 
+                dyn_m = M / dyn_R    # probability of a single event of healing
+                dyn_a  = A / dyn_R      # probablity of a field infection
+                dyn_lm = dyn_m + L / dyn_R    # probability of a normal infection
+                rand   = np.random.uniform()  
 
                 if rand < dyn_m: # If heal (infected in recovered)
                     # Select a random occupied vertex and heal.
@@ -157,7 +153,7 @@ class OAD:
                         list_S.remove(ver) 
 
                 # Termination.
-                if t >= self.tmax or num_I==0 or dt <0:
+                if t >= tmax or num_I==0 or dt <0:
                     self._results.append(num_S/self.num_nodes)  
                     break
         
