@@ -1,6 +1,9 @@
-from dataclasses import dataclass
 import networkx as nx
 import numpy as np
+from dataclasses import dataclass, field
+from pathlib import Path
+import json
+from typing import Any
 
 def load_network(
         network_type:str,
@@ -39,18 +42,57 @@ def load_network(
 
 @dataclass
 class Cascade:
-    """A small dataclass to collect results from cascades. """
+    """ A small dataclass to collect results from simulation (cascades). 
+    
+    Parameters
+    ----------
+    survived :
+        The nodes not affected by the cascading failure.
+        It may be a list of node ids (int) or labels (str)
+    removed :
+        The nodes failed as consequence of the cascade.
+        Same type as `survived`
+    gcc :
+        The fraction of nodes left in the greatest connected component.
+    
+    """
+
+    survived: list[int | str] = field(default_factory=list)
+    removed: list[int | str] = field(default_factory=list)
+    gcc: float | None = None
+
 
     def to_json(self) -> dict[str, ...]:
         """Convert to JSON serializable types."""
         return {
-            "time": np.datetime_as_string(self.time).tolist() if self.time is not None else None,
-            "failing_0": self.failing_0,
-            "failing_1": self.failing_1,
+            "survived": self.survived,
+            "removed": self.removed,
             "gcc": self.gcc,
         }
 
+    def sum_survived(self, key: str|None = None) -> int:
+        """Compute the sum (or number) of nodes survived."""
+        return len(self.survived)
+
+    def set_gcc(self, gcc: float):
+        """Set the great connected component size."""
+        self.gcc = gcc
+        return self
+    
+    
+    def write(self, filepath: str) -> None:
+        """Write the Cascade result to json file.
+    
+        Parameters
+        ----------
+        filepath : str
+            filename output
+    
+        """
+        with Path(filepath).open("w") as fout:
+            json.dump(self.to_json(), fout, indent=4)
+    
 
     def __len__(self) -> int:
         """Return the size of the cascade."""
-        return len(self.failing_0) + len(self.failing_1)
+        return len(self.survived) 

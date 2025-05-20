@@ -20,5 +20,4 @@ if __name__ == "__main__":
     lam, gam = (2, 0.01)
     tmax, init0 = (100, 0.05)
     model = OAD(G)
-    s = model.run(lam, gam, tmax, init0, num_samp=num_samples)
-    print(f"Average susceptibles: {s:1.2f}")
+    model.run(lam, gam, tmax, init0, num_samp=num_samples)
