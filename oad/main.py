@@ -12,8 +12,7 @@ class OAD:
     """
 
     def __init__(self, 
-                 G:nx.Graph,
-                 init0:float
+                 G:nx.Graph
                  ) -> None:
         '''
         G: nx.Graph
@@ -23,7 +22,6 @@ class OAD:
         '''
         self.num_nodes = G.number_of_nodes()
         self.G = G
-        self.init0 = init0
 
         self.net_kmax = max([v for k, v in G.degree()]) # max degree
         self._results = []  
@@ -32,6 +30,7 @@ class OAD:
             lam: float,
             gam: float,
             tmax: float,
+            init0:float,
             num_samp: int = 10) -> float:
         """
 
@@ -58,11 +57,11 @@ class OAD:
         # Rescale the parameters
         lam = lam/self.num_nodes
         gam = gam/(self.num_nodes**2) 
-        mu = 1     # Rescale the other parameters to mu (see paper [1])
+        mu = 1     # Rescale parameters dividing by mu (see paper [1])
 
         for _ in range(num_samp):
 
-            dyn_sig = {i : 0 for i in self.G.nodes()}  # 0:operational, 1:affected
+            node_state = {i : 0 for i in self.G.nodes()}  # 0:operational, 1:affected
             list_I = [None for item in range(self.num_nodes)] 
             list_S = [None for item in range(self.num_nodes)]
             num_I  = 0
@@ -76,9 +75,9 @@ class OAD:
                 ver_i_list.append(ver)
                 list_I[num_I] = ver
                 num_I += 1 # total infected
-                dyn_sig[ver]= 1 # 
+                node_state[ver]= 1 # 
                 tot_deg_I += self.G.degree(ver) # 
-                if num_I == int(self.num_nodes*self.init0):
+                if num_I == int(self.num_nodes*init0):
                     break
  
             ver_s_list =  list(set(range(self.num_nodes)) - set(ver_i_list))
@@ -115,7 +114,7 @@ class OAD:
                     ver = list_I[pos_inf]
 
                     # Then, heal it (put it in Recovered)
-                    dyn_sig[ver] = 2   # 2: disrupted
+                    node_state[ver] = 2   # 2: disrupted
                     tot_deg_I -= self.G.degree(ver)
                     num_I -= 1
                     num_R += 1 # new
@@ -133,8 +132,8 @@ class OAD:
                     # Select one of its neighbors
                     neighbors_values = [n for n in self.G.neighbors(ver)]
                     ver = np.random.choice(neighbors_values)
-                    if dyn_sig[ver] == 0: # if not a phantom process, infect
-                        dyn_sig[ver] = 1
+                    if node_state[ver] == 0: # if not a phantom process, infect
+                        node_state[ver] = 1
                         tot_deg_I += self.G.degree(ver)
                         list_I[num_I] = ver    # Add one element to list of I
                         num_I += 1             # Increase by 1 the list
@@ -145,8 +144,8 @@ class OAD:
                     
                     # ver = np.random.choice(neighbors_values)
                     ver = np.random.choice([item for item in list_S if item is not None])  # [ATTEMPT] here we don't need phantom
-                    if dyn_sig[ver] == 0: # we don't need to test for phantom process, actually
-                        dyn_sig[ver] = 1
+                    if node_state[ver] == 0: # we don't need to test for phantom process, actually
+                        node_state[ver] = 1
 
                         tot_deg_I += self.G.degree(ver)
                         list_I[num_I] = ver    # Add one element to list of I
