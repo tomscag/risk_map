@@ -3,7 +3,12 @@ import numpy as np
 
 class OAD:
     """
-        Simulate the OAD model on a network
+    
+    Run the OAD model on a network [1] 
+    using an optimized version of Gillespie algorithm [2]
+    [1] https://www.sciencedirect.com/science/article/pii/S0960077924013651#GS1
+    [2] https://www.sciencedirect.com/science/article/pii/S0010465517301893
+    
     """
 
     def __init__(self, 
@@ -29,8 +34,6 @@ class OAD:
             tmax: float,
             num_samp: int = 10) -> float:
         """
-        Run OAD model using an optimized Gillespie algorithm
-        (ref. https://www.sciencedirect.com/science/article/pii/S0010465517301893)
 
         Parameters
         ----------
@@ -55,7 +58,7 @@ class OAD:
         # Rescale the parameters
         lam = lam/self.num_nodes
         gam = gam/(self.num_nodes**2) 
-        mu = 1     # Rescale the other parameters to mu (see paper)
+        mu = 1     # Rescale the other parameters to mu (see paper [1])
 
         for _ in range(num_samp):
 
